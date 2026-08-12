@@ -18,10 +18,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 
-    <!-- Firebase (bản compat, dùng trực tiếp không cần build) -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
     <!-- html2canvas: dùng để xuất ảnh biên nhận (nút "📸 Tải ảnh") -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -66,8 +62,6 @@
         .section-head { flex-direction: column; align-items: flex-start; gap: 10px; margin: 24px 0 12px; }
         .section-head .select-month { width: 100%; }
         .select-month { width: 100%; }
-        .room-bar { flex-direction: column; }
-        .room-input { width: 100%; }
         .summary-banner { padding: 16px 18px; gap: 18px; }
         .stats-summary-line { flex-direction: column; align-items: flex-start; gap: 2px; }
       }
@@ -195,19 +189,6 @@
       .empty-note { text-align: center; padding: 30px; color: var(--muted); }
       .empty-state { margin-top: 30px; text-align: center; padding: 50px 20px; border: 2px dashed var(--border); border-radius: 18px; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 14.5px; }
       .footer { text-align: center; margin-top: 40px; font-size: 12px; color: var(--muted); }
-      .room-bar { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-      .room-label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
-      .room-input { width: 150px; }
-      .sync-badge { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 999px; }
-      .sync-synced { background: #e6f7f5; color: #1d8f84; }
-      .sync-connecting { background: #fff3ea; color: #b8482f; }
-      .sync-offline { background: #f0e4d0; color: var(--muted); }
-      .sync-error { background: #ffe4e0; color: #d9483a; }
-      .room-security-note {
-        max-width: 640px; margin: -12px auto 20px; text-align: center; font-size: 11.5px;
-        color: var(--muted); line-height: 1.5; background: #fff3ea; border-radius: 10px; padding: 8px 14px;
-      }
-      .room-security-note b { color: #b8482f; font-family: "JetBrains Mono", monospace; }
       .meal-form-editing { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(46, 196, 182, 0.18); }
       .stats-summary-line {
         font-size: 13px; color: var(--muted); margin: -8px 0 14px; background: #fdf6ea;
@@ -282,27 +263,6 @@
         });
       const STORAGE_KEY = "so-chia-tien-vui:meals";
       const STORAGE_KEY_ADJ = "so-chia-tien-vui:adjustments";
-      const STORAGE_KEY_ROOM = "so-chia-tien-vui:room";
-
-      // ---------- Firebase ----------
-      // 👉 Dán config Firebase của bạn vào đây (xem hướng dẫn lấy config ở phần chat).
-      const firebaseConfig = {
-        apiKey: "AIzaSyDr-vZVbTWbrvQ7amgLNm1Zb70EvghUUbk",
-        authDomain: "chi-tieu-an.firebaseapp.com",
-        projectId: "chi-tieu-an",
-        storageBucket: "chi-tieu-an.firebasestorage.app",
-        messagingSenderId: "692351717728",
-        appId: "1:692351717728:web:2c4a8901fc373cb4ef0e05",
-      };
-      let db = null;
-      try {
-        if (firebaseConfig.apiKey !== "YOUR_API_KEY" && typeof firebase !== "undefined") {
-          if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-          db = firebase.firestore();
-        }
-      } catch (e) {
-        console.warn("Chưa kết nối được Firebase:", e);
-      }
 
       // ---------- Avatar ----------
       function Avatar({ name, size = 32 }) {
@@ -869,42 +829,6 @@
         };
         const clearMealSelection = () => setSelectedMealIds([]);
 
-        const [roomId, setRoomId] = useState(() => {
-          try {
-            const saved = localStorage.getItem(STORAGE_KEY_ROOM);
-            if (saved) return saved;
-            // Chưa từng dùng app này: sinh mã nhóm ngẫu nhiên riêng, KHÔNG dùng mã
-            // mặc định cố định ("chung"), để tránh dữ liệu bị trộn lẫn với người
-            // dùng khác cũng mở file này mà quên đổi mã nhóm.
-            return "nhom-" + uid();
-          } catch { return "nhom-" + uid(); }
-        });
-        const [roomInput, setRoomInput] = useState(roomId);
-        const [syncStatus, setSyncStatus] = useState(db ? "connecting" : "offline");
-
-        useEffect(() => {
-          try { localStorage.setItem(STORAGE_KEY_ROOM, roomId); } catch {}
-        }, [roomId]);
-
-        // Lắng nghe dữ liệu realtime từ Firestore (nếu đã cấu hình)
-        useEffect(() => {
-          if (!db) { setSyncStatus("offline"); return; }
-          setSyncStatus("connecting");
-          const ref = db.collection("rooms").doc(roomId);
-          const unsub = ref.onSnapshot(
-            (snap) => {
-              const data = snap.data();
-              if (data) {
-                if (Array.isArray(data.meals)) setMeals(data.meals);
-                if (Array.isArray(data.adjustments)) setAdjustments(data.adjustments);
-              }
-              setSyncStatus("synced");
-            },
-            (err) => { console.error(err); setSyncStatus("error"); }
-          );
-          return () => unsub();
-        }, [roomId]);
-
         useEffect(() => {
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(meals)); } catch {}
         }, [meals]);
@@ -913,19 +837,9 @@
           try { localStorage.setItem(STORAGE_KEY_ADJ, JSON.stringify(adjustments)); } catch {}
         }, [adjustments]);
 
-        const syncMeals = (nextMeals) => {
-          if (!db) return;
-          db.collection("rooms").doc(roomId).set({ meals: nextMeals }, { merge: true }).catch((e) => console.error(e));
-        };
-        const syncAdjustments = (nextAdjustments) => {
-          if (!db) return;
-          db.collection("rooms").doc(roomId).set({ adjustments: nextAdjustments }, { merge: true }).catch((e) => console.error(e));
-        };
-
         const addMeal = (meal) => {
           const next = [meal, ...meals];
           setMeals(next);
-          syncMeals(next);
         };
         const deleteMeal = (id) => {
           const meal = meals.find((x) => x.id === id);
@@ -933,13 +847,11 @@
           if (!window.confirm(`Xoá ${label}? Hành động này không thể hoàn tác.`)) return;
           const next = meals.filter((x) => x.id !== id);
           setMeals(next);
-          syncMeals(next);
           if (editingMealId === id) setEditingMealId(null);
         };
         const updateMeal = (updatedMeal) => {
           const next = meals.map((m) => (m.id === updatedMeal.id ? updatedMeal : m));
           setMeals(next);
-          syncMeals(next);
           setEditingMealId(null);
         };
         const startEditMeal = (meal) => {
@@ -956,13 +868,11 @@
           const date = monthFilter !== "all" ? `${monthFilter}-15` : today;
           const next = [{ id: uid(), name, amount, note, date }, ...adjustments];
           setAdjustments(next);
-          syncAdjustments(next);
         };
         const deleteAdjustment = (id) => {
           if (!window.confirm("Xoá khoản điều chỉnh này?")) return;
           const next = adjustments.filter((x) => x.id !== id);
           setAdjustments(next);
-          syncAdjustments(next);
         };
         const togglePaid = (mealId, personName) => {
           const next = meals.map((meal) => {
@@ -978,7 +888,6 @@
             };
           });
           setMeals(next);
-          syncMeals(next);
         };
         const setPersonAmount = (mealId, personName, amount) => {
           const next = meals.map((meal) => {
@@ -991,7 +900,6 @@
             };
           });
           setMeals(next);
-          syncMeals(next);
         };
 
         const knownPeople = useMemo(() => {
@@ -1114,33 +1022,6 @@
                 <h1>Sổ Chia Tiền Vui 🍜</h1>
                 <p>Ghi bữa ăn, chia đều chi phí, tích ai đã trả — gọn trong một nốt nhạc.</p>
               </header>
-
-              <div className="room-bar">
-                <span className="room-label">👥 Mã nhóm:</span>
-                <input
-                  className="input room-input"
-                  value={roomInput}
-                  onChange={(e) => setRoomInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") setRoomId(roomInput.trim() || "chung"); }}
-                  placeholder="vd: nhom-abc"
-                />
-                <button className="btn btn-outline" type="button" onClick={() => setRoomId(roomInput.trim() || "chung")}>
-                  Vào nhóm
-                </button>
-                <span className={`sync-badge sync-${syncStatus}`}>
-                  {syncStatus === "synced" && "☁️ Đã đồng bộ"}
-                  {syncStatus === "connecting" && "🔄 Đang kết nối..."}
-                  {syncStatus === "offline" && "📴 Chưa cấu hình Firebase"}
-                  {syncStatus === "error" && "⚠️ Lỗi kết nối"}
-                </span>
-              </div>
-              {db && (
-                <div className="room-security-note">
-                  🔒 Chỉ chia sẻ mã nhóm <b>{roomId}</b> cho đúng người trong nhóm — ai biết mã này (và nếu
-                  Firestore Rules đang ở chế độ mở) đều xem/sửa được dữ liệu. Nhớ kiểm tra lại Firestore
-                  Security Rules trên Firebase Console để giới hạn quyền truy cập.
-                </div>
-              )}
 
               <MealForm
                 onAdd={addMeal}
