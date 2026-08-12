@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sổ Chia Tiền Vui 🍜</title>
+    <meta name="description" content="Ghi bữa ăn, chia tiền, theo dõi ai đã trả — vui và dễ dùng." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- React + Babel qua CDN, không cần bước build -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+    <!-- Firebase (bản compat, dùng trực tiếp không cần build) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+
+    <style>
+      :root {
+        --coral: #ff6b57;
+        --teal: #2ec4b6;
+        --yellow: #ffc93c;
+        --grape: #8e7cc3;
+        --ink: #2b2340;
+        --paper: #fffdf8;
+        --bg: #fff7ec;
+        --border: #f0e4d0;
+        --muted: #8a8098;
+      }
+      * { box-sizing: border-box; }
+      html, body, #root { min-height: 100%; }
+      body {
+        margin: 0;
+        font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      .app-bg { position: relative; min-height: 100vh; overflow: hidden; padding: 40px 16px 60px; }
+      .blob { position: absolute; border-radius: 50%; filter: blur(50px); opacity: 0.35; z-index: 0; }
+      .blob-1 { width: 380px; height: 380px; background: var(--coral); top: -140px; left: -120px; }
+      .blob-2 { width: 320px; height: 320px; background: var(--teal); top: 200px; right: -140px; }
+      .blob-3 { width: 300px; height: 300px; background: var(--yellow); bottom: -140px; left: 30%; }
+      .container { position: relative; z-index: 1; max-width: 920px; margin: 0 auto; }
+      .header { text-align: center; margin-bottom: 28px; }
+      .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 3px; color: var(--coral); font-weight: 700; margin-bottom: 8px; }
+      .header h1 { font-family: "Baloo 2", sans-serif; font-size: clamp(32px, 6vw, 48px); margin: 0 0 8px; font-weight: 700; }
+      .header p { color: var(--muted); margin: 0; font-size: 15px; }
+      .card { background: var(--paper); border: 1px solid var(--border); border-radius: 18px; }
+      .fun-shadow { box-shadow: 0 10px 30px rgba(255, 107, 87, 0.08); }
+      .card-title { font-family: "Baloo 2", sans-serif; font-size: 19px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+      .form-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
+      @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+      .label { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; margin-bottom: 5px; letter-spacing: 0.3px; }
+      .input {
+        width: 100%; background: #fff; border: 1.5px solid var(--border); border-radius: 10px;
+        padding: 10px 12px; font-family: "Inter", sans-serif; font-size: 14px; color: var(--ink);
+        outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .input:focus { border-color: var(--coral); box-shadow: 0 0 0 3px rgba(255, 107, 87, 0.15); }
+      .select-month { width: 190px; }
+      .suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+      .suggestion-pill {
+        background: #fff3ea; border: 1px dashed var(--coral); color: var(--coral); border-radius: 999px;
+        padding: 4px 10px; font-size: 12.5px; cursor: pointer; font-family: "Inter", sans-serif;
+      }
+      .suggestion-pill:hover { background: #ffe4d8; }
+      .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+      .payer-pill {
+        display: inline-flex; align-items: center; gap: 7px; background: #fff; border: 1.5px solid var(--border);
+        border-radius: 999px; padding: 4px 12px 4px 6px; font-size: 13px; font-weight: 500; cursor: pointer;
+        font-family: "Inter", sans-serif; color: var(--ink);
+      }
+      .payer-pill:hover { border-color: var(--coral); }
+      .payer-pill.selected { background: #fff3ea; border-color: var(--coral); color: #b8482f; font-weight: 700; }
+      .payer-check { color: var(--coral); font-weight: 700; }
+      .payer-tag { font-size: 12px; color: #8E7CC3; font-weight: 600; margin-top: 4px; }
+      .payer-mini-tag {
+        background: #ece7f7; color: #6b5aa3; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+      }
+      .chip { display: inline-flex; align-items: center; gap: 7px; background: #f4efe2; border-radius: 999px; padding: 4px 8px 4px 6px; font-size: 13px; font-weight: 500; }
+      .chip button { background: none; border: none; color: var(--muted); cursor: pointer; display: flex; padding: 0; font-size: 14px; }
+      .chip button:hover { color: var(--coral); }
+      .hint-money { margin-top: 10px; font-size: 13.5px; background: #fff3ea; border-radius: 10px; padding: 8px 12px; color: #7a4a2f; }
+      .hint-money b { font-family: "JetBrains Mono", monospace; color: var(--coral); }
+      .error-text { color: #d9483a; font-size: 13px; margin-top: 10px; font-weight: 500; }
+      .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 10px; padding: 10px 18px; font-family: "Inter", sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; border: none; }
+      .btn-primary { background: linear-gradient(135deg, #ff8a6d, #ff6b57); color: #fff; box-shadow: 0 8px 18px rgba(255, 107, 87, 0.35); }
+      .btn-primary:hover { filter: brightness(1.05); }
+      .btn-outline { background: #fff; border: 1.5px solid var(--border); color: var(--ink); }
+      .btn-outline:hover { border-color: var(--coral); color: var(--coral); }
+      .section-head { display: flex; align-items: center; justify-content: space-between; margin: 30px 0 14px; }
+      .section-head h2 { font-family: "Baloo 2", sans-serif; font-size: 20px; margin: 0; }
+      .meal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+      .meal-card { padding: 18px; }
+      .meal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+      .meal-name { font-weight: 700; font-size: 15.5px; }
+      .meal-meta { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+      .meal-amount { font-family: "JetBrains Mono", monospace; font-weight: 700; color: var(--coral); font-size: 15px; }
+      .icon-btn { background: none; border: none; color: var(--muted); cursor: pointer; margin-top: 6px; padding: 2px; font-size: 13px; }
+      .icon-btn:hover { color: #d9483a; }
+      .progress-track { height: 8px; border-radius: 6px; background: #f0e4d0; margin-top: 14px; overflow: hidden; }
+      .progress-fill { height: 100%; background: linear-gradient(90deg, var(--teal), #4fd8ca); border-radius: 6px; transition: width 0.25s; }
+      .progress-label { font-size: 11.5px; color: var(--muted); margin-top: 6px; font-weight: 600; }
+      .people-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+      .person-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 10px; cursor: pointer; transition: background 0.15s; }
+      .person-row:hover { background: #fdf6ea; }
+      .person-row.paid { opacity: 0.65; }
+      .person-left { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 500; }
+      .person-right { display: flex; align-items: center; gap: 10px; }
+      .person-amount { font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--muted); }
+      .check-btn { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--border); background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0; flex-shrink: 0; font-size: 13px; font-weight: 700; }
+      .check-btn.checked { background: var(--teal); border-color: var(--teal); }
+      .check-btn.partial { background: var(--yellow); border-color: var(--yellow); color: #4a3400; font-size: 10.5px; }
+      .amount-edit-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px; font-size: 12px; display: flex; }
+      .amount-edit-btn:hover { color: var(--coral); }
+      .amount-input { width: 88px; padding: 4px 8px !important; font-size: 12.5px !important; }
+      .summary-banner { margin-top: 18px; background: linear-gradient(135deg, #2b2340, #3d3157); border-radius: 18px; padding: 20px 24px; color: #fff; display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
+      .summary-label { font-size: 12px; color: #c9c1de; margin-bottom: 4px; }
+      .summary-value { font-family: "JetBrains Mono", monospace; font-size: 22px; font-weight: 700; }
+      .settled-flag { margin-left: auto; display: flex; align-items: center; gap: 8px; background: rgba(46, 196, 182, 0.2); color: #6fe3d6; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+      .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+      .person-stat-card { position: relative; background: var(--paper); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+      .badge-tag { position: absolute; top: -11px; right: 14px; background: var(--yellow); color: #4a3400; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; box-shadow: 0 4px 10px rgba(255, 201, 60, 0.4); }
+      .person-stat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+      .person-stat-name { font-weight: 700; font-size: 14.5px; }
+      .person-stat-sub { font-size: 11.5px; color: var(--muted); }
+      .meals-toggle {
+        background: none; border: none; padding: 0; margin-top: 2px; cursor: pointer;
+        font-size: 11.5px; color: var(--muted); font-family: "Inter", sans-serif; font-weight: 600;
+      }
+      .meals-toggle:hover { color: var(--coral); }
+      .meals-breakdown {
+        background: #fdf6ea; border-radius: 10px; padding: 8px 10px; margin-bottom: 12px;
+        display: flex; flex-direction: column; gap: 6px;
+      }
+      .meals-breakdown-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+      .mb-check { flex-shrink: 0; }
+      .mb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+      .mb-amount { flex-shrink: 0; font-family: "JetBrains Mono", monospace; color: var(--muted); font-size: 11.5px; }
+      .person-stat-total { font-family: "JetBrains Mono", monospace; font-size: 21px; font-weight: 700; margin-bottom: 10px; }
+      .mini-progress-track { height: 6px; border-radius: 4px; background: #f0e4d0; overflow: hidden; margin-bottom: 12px; }
+      .mini-progress-fill { height: 100%; border-radius: 4px; }
+      .person-stat-row { display: flex; justify-content: space-between; font-size: 12.5px; margin-top: 4px; color: var(--muted); }
+      .person-stat-row b { font-family: "JetBrains Mono", monospace; color: var(--ink); }
+      .adj-add-btn {
+        background: none; border: 1.5px dashed var(--border); color: var(--muted); border-radius: 10px;
+        padding: 7px 10px; font-size: 12px; cursor: pointer; width: 100%; text-align: center;
+        font-family: "Inter", sans-serif; font-weight: 600; margin-top: 12px;
+      }
+      .adj-add-btn:hover { border-color: var(--coral); color: var(--coral); }
+      .adj-form { margin-top: 12px; background: #fdf6ea; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+      .sign-toggle { display: flex; gap: 6px; }
+      .sign-btn { flex: 1; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; padding: 7px; font-weight: 700; cursor: pointer; font-size: 13px; color: var(--muted); font-family: "Inter", sans-serif; }
+      .sign-btn.active-plus { background: #e6f7f5; border-color: var(--teal); color: #1d8f84; }
+      .sign-btn.active-minus { background: #ffece9; border-color: var(--coral); color: #b8482f; }
+      .adj-form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 2px; }
+      .adj-form-actions .btn { padding: 7px 14px; font-size: 13px; }
+      .adj-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+      .adj-row { display: flex; align-items: center; gap: 8px; font-size: 12px; background: #fdf6ea; border-radius: 8px; padding: 6px 8px; }
+      .adj-note { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+      .adj-amount { font-family: "JetBrains Mono", monospace; font-weight: 700; flex-shrink: 0; font-size: 12px; }
+      .adj-amount.pos { color: #1d8f84; }
+      .adj-amount.neg { color: #d9483a; }
+      .adj-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; flex-shrink: 0; padding: 0; }
+      .adj-del:hover { color: #d9483a; }
+      .adj-toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; margin-top: 4px; color: var(--muted); }
+      .chart-card { padding: 20px; }
+      .chart-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+      .chart-row .m-label { width: 64px; flex-shrink: 0; font-size: 12.5px; color: var(--muted); font-family: "JetBrains Mono", monospace; }
+      .chart-row .m-track { flex: 1; height: 16px; background: #f0e4d0; border-radius: 8px; overflow: hidden; }
+      .chart-row .m-fill { height: 100%; background: linear-gradient(90deg, #ff8a6d, var(--coral)); border-radius: 8px; }
+      .chart-row .m-value { width: 100px; text-align: right; font-family: "JetBrains Mono", monospace; font-size: 12.5px; font-weight: 600; }
+      .avatar { border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-family: "Baloo 2", sans-serif; font-weight: 600; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.7); box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+      .empty-note { text-align: center; padding: 30px; color: var(--muted); }
+      .empty-state { margin-top: 30px; text-align: center; padding: 50px 20px; border: 2px dashed var(--border); border-radius: 18px; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 14.5px; }
+      .footer { text-align: center; margin-top: 40px; font-size: 12px; color: var(--muted); }
+      .room-bar { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+      .room-label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+      .room-input { width: 150px; }
+      .sync-badge { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 999px; }
+      .sync-synced { background: #e6f7f5; color: #1d8f84; }
+      .sync-connecting { background: #fff3ea; color: #b8482f; }
+      .sync-offline { background: #f0e4d0; color: var(--muted); }
+      .sync-error { background: #ffe4e0; color: #d9483a; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="react">
+      const { useState, useEffect, useMemo } = React;
+
+      // ---------- utils ----------
+      const AVATAR_COLORS = ["#FF6B57", "#2EC4B6", "#FFC93C", "#8E7CC3", "#4C9F70", "#FF8FAB", "#5DA9E9", "#F49D37"];
+      const uid = () => Math.random().toString(36).slice(2, 10);
+      const fmt = (n) => new Intl.NumberFormat("en-US").format(Math.round(n || 0)) + " đ";
+      const formatTyping = (raw) => {
+        const digits = String(raw).replace(/[^\d]/g, "");
+        if (!digits) return "";
+        return new Intl.NumberFormat("en-US").format(parseInt(digits, 10));
+      };
+      const parseTyping = (formatted) => {
+        const digits = String(formatted).replace(/[^\d]/g, "");
+        return digits ? parseInt(digits, 10) : 0;
+      };
+      const monthKey = (dateStr) => (dateStr || "").slice(0, 7);
+      const monthLabel = (key) => {
+        if (!key) return "";
+        const [y, m] = key.split("-");
+        return `Tháng ${parseInt(m, 10)}/${y}`;
+      };
+      const colorForName = (name) => {
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+      };
+      const initials = (name) => {
+        const parts = name.trim().split(/\s+/);
+        return (parts[parts.length - 1] || "").slice(0, 2).toUpperCase();
+      };
+      const STORAGE_KEY = "so-chia-tien-vui:meals";
+      const STORAGE_KEY_ADJ = "so-chia-tien-vui:adjustments";
+      const STORAGE_KEY_ROOM = "so-chia-tien-vui:room";
+
+      // ---------- Firebase ----------
+      // 👉 Dán config Firebase của bạn vào đây (xem hướng dẫn lấy config ở phần chat).
+      const firebaseConfig = {
+        apiKey: "AIzaSyDr-vZVbTWbrvQ7amgLNm1Zb70EvghUUbk",
+        authDomain: "chi-tieu-an.firebaseapp.com",
+        projectId: "chi-tieu-an",
+        storageBucket: "chi-tieu-an.firebasestorage.app",
+        messagingSenderId: "692351717728",
+        appId: "1:692351717728:web:2c4a8901fc373cb4ef0e05",
+      };
+      let db = null;
+      try {
+        if (firebaseConfig.apiKey !== "YOUR_API_KEY" && typeof firebase !== "undefined") {
+          if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+          db = firebase.firestore();
+        }
+      } catch (e) {
+        console.warn("Chưa kết nối được Firebase:", e);
+      }
+
+      // ---------- Avatar ----------
+      function Avatar({ name, size = 32 }) {
+        return (
+          <div
+            className="avatar"
+            style={{ width: size, height: size, background: colorForName(name), fontSize: size * 0.38 }}
+            title={name}
+          >
+            {initials(name)}
+          </div>
+        );
+      }
+
+      // ---------- MealForm ----------
+      function MealForm({ onAdd, knownPeople }) {
+        const [name, setName] = useState("");
+        const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+        const [amountDisplay, setAmountDisplay] = useState("");
+        const [people, setPeople] = useState([]);
+        const [personInput, setPersonInput] = useState("");
+        const [payer, setPayer] = useState("");
+        const [error, setError] = useState("");
+        const amount = parseTyping(amountDisplay);
+
+        const addPerson = (val) => {
+          const v = (val ?? personInput).trim();
+          if (!v) return;
+          if (people.some((p) => p.toLowerCase() === v.toLowerCase())) { setPersonInput(""); return; }
+          const next = [...people, v];
+          setPeople(next);
+          setPersonInput("");
+          if (!payer) setPayer(v);
+        };
+        const removePerson = (p) => {
+          setPeople(people.filter((x) => x !== p));
+          if (payer === p) setPayer("");
+        };
+
+        const submit = () => {
+          setError("");
+          if (!name.trim()) return setError("Chưa nhập tên bữa ăn 🍽️");
+          if (!amount || amount <= 0) return setError("Số tiền phải lớn hơn 0 💰");
+          if (people.length === 0) return setError("Cần ít nhất 1 người tham gia 🙋");
+          if (!payer) return setError("Chọn ai đã chi tiền trước cho bữa này nhé 💸");
+          const share = amount / people.length;
+          onAdd({
+            id: uid(),
+            name: name.trim(),
+            date,
+            amount,
+            payer,
+            people: people.map((p) => ({ name: p, paidAmount: p === payer ? share : 0 })),
+          });
+          setName(""); setAmountDisplay(""); setPeople([]); setPersonInput(""); setPayer("");
+        };
+
+        const suggestions = knownPeople.filter(
+          (p) => !people.some((x) => x.toLowerCase() === p.toLowerCase()) &&
+            (personInput === "" || p.toLowerCase().includes(personInput.toLowerCase()))
+        );
+
+        return (
+          <div className="card fun-shadow" style={{ padding: 22 }}>
+            <div className="card-title">🍽️ Ghi bữa ăn mới</div>
+            <div className="form-grid">
+              <div>
+                <label className="label">Tên bữa ăn</label>
+                <input className="input" placeholder="VD: Lẩu Thái tối thứ 6 🌶️" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div>
+                <label className="label">Ngày</label>
+                <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+              </div>
+              <div>
+                <label className="label">Tổng tiền</label>
+                <input className="input" inputMode="numeric" placeholder="200,000" value={amountDisplay} onChange={(e) => setAmountDisplay(formatTyping(e.target.value))} />
+              </div>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <label className="label">Người tham gia</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  className="input"
+                  placeholder="Nhập tên rồi Enter"
+                  value={personInput}
+                  onChange={(e) => setPersonInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPerson(); } }}
+                />
+                <button className="btn btn-outline" onClick={() => addPerson()} type="button">+ Thêm</button>
+              </div>
+
+              {suggestions.length > 0 && (
+                <div className="suggestions">
+                  {suggestions.slice(0, 6).map((p) => (
+                    <button key={p} type="button" className="suggestion-pill" onClick={() => addPerson(p)}>+ {p}</button>
+                  ))}
+                </div>
+              )}
+
+              {people.length > 0 && (
+                <div className="chip-row">
+                  {people.map((p) => (
+                    <span className="chip" key={p}>
+                      <Avatar name={p} size={20} />
+                      {p}
+                      <button onClick={() => removePerson(p)} type="button">×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {amount > 0 && people.length > 0 && (
+                <div className="hint-money">🙂 Mỗi người trả <b>{fmt(amount / people.length)}</b></div>
+              )}
+            </div>
+
+            {people.length > 0 && (
+              <div style={{ marginTop: 14 }}>
+                <label className="label">💸 Ai đã chi tiền trước cho bữa này?</label>
+                <div className="chip-row" style={{ marginTop: 0 }}>
+                  {people.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      className={`payer-pill ${payer === p ? "selected" : ""}`}
+                      onClick={() => setPayer(p)}
+                    >
+                      <Avatar name={p} size={20} />
+                      {p}
+                      {payer === p && <span className="payer-check">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {error && <div className="error-text">{error}</div>}
+            <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={submit} type="button">+ Lưu bữa ăn</button>
+          </div>
+        );
+      }
+
+      // ---------- PersonRow (hỗ trợ trả một phần) ----------
+      function PersonRow({ person, share, isPayer, onToggleFull, onSetAmount }) {
+        const [editing, setEditing] = useState(false);
+        const [val, setVal] = useState("");
+        const paidAmount = Math.max(0, person.paidAmount || 0);
+        const fullyPaid = paidAmount >= share - 0.5;
+        const partial = paidAmount > 0 && !fullyPaid;
+
+        const startEdit = (e) => {
+          e.stopPropagation();
+          setVal(formatTyping(String(Math.round(paidAmount))));
+          setEditing(true);
+        };
+        const confirm = (e) => {
+          e.stopPropagation();
+          onSetAmount(parseTyping(val));
+          setEditing(false);
+        };
+        const cancel = (e) => {
+          e.stopPropagation();
+          setEditing(false);
+        };
+
+        return (
+          <div className={`person-row ${fullyPaid ? "paid" : ""}`}>
+            <span className="person-left">
+              <Avatar name={person.name} size={26} />
+              <span>{person.name}</span>
+              {isPayer && <span className="payer-mini-tag">đã chi</span>}
+            </span>
+
+            {editing ? (
+              <span className="person-right">
+                <input
+                  className="input amount-input"
+                  inputMode="numeric"
+                  autoFocus
+                  placeholder="0"
+                  value={val}
+                  onChange={(e) => setVal(formatTyping(e.target.value))}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") confirm(e);
+                    if (e.key === "Escape") cancel(e);
+                  }}
+                />
+                <button type="button" className="amount-edit-btn" onClick={confirm} title="Lưu">✅</button>
+                <button type="button" className="amount-edit-btn" onClick={cancel} title="Huỷ">✖️</button>
+              </span>
+            ) : (
+              <span className="person-right">
+                <span className="person-amount">
+                  {partial ? `${fmt(paidAmount)} / ${fmt(share)}` : fmt(share)}
+                </span>
+                <button type="button" className="amount-edit-btn" onClick={startEdit} title="Nhập số tiền đã trả">✎</button>
+                <button
+                  type="button"
+                  className={`check-btn ${fullyPaid ? "checked" : partial ? "partial" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); onToggleFull(); }}
+                  aria-label={fullyPaid ? "Đã trả đủ" : "Chưa trả đủ"}
+                  title={isPayer ? "Người này đã chi tiền trước" : fullyPaid ? "Đã trả đủ - bấm để bỏ đánh dấu" : "Bấm để đánh dấu đã trả đủ"}
+                >
+                  {fullyPaid ? "✓" : partial ? "½" : ""}
+                </button>
+              </span>
+            )}
+          </div>
+        );
+      }
+
+      // ---------- MealCard ----------
+      function MealCard({ meal, onTogglePaid, onSetAmount, onDelete }) {
+        const share = meal.amount / meal.people.length;
+        const totalPaid = meal.people.reduce((s, p) => s + Math.max(0, p.paidAmount || 0), 0);
+        const paidCount = meal.people.filter((p) => (p.paidAmount || 0) >= share - 0.5).length;
+        const allPaid = paidCount === meal.people.length;
+        const progressPct = meal.amount > 0 ? Math.min(100, (totalPaid / meal.amount) * 100) : 0;
+
+        return (
+          <div className="card meal-card">
+            <div className="meal-head">
+              <div>
+                <div className="meal-name">{meal.name}</div>
+                <div className="meal-meta">{meal.date} · {meal.people.length} người · {fmt(share)}/người</div>
+                {meal.payer && (
+                  <div className="payer-tag">💸 {meal.payer} đã chi trước {fmt(meal.amount)}</div>
+                )}
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div className="meal-amount">{fmt(meal.amount)}</div>
+                <button className="icon-btn" onClick={() => onDelete(meal.id)} type="button" title="Xoá bữa ăn">🗑️ Xoá</button>
+              </div>
+            </div>
+
+            <div className="progress-track">
+              <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+            </div>
+            <div className="progress-label">
+              {allPaid
+                ? "🎉 Mọi người đã trả đủ!"
+                : `${fmt(totalPaid)}/${fmt(meal.amount)} đã thu · ${paidCount}/${meal.people.length} người trả đủ`}
+            </div>
+
+            <div className="people-list">
+              {meal.people.map((p) => (
+                <PersonRow
+                  key={p.name}
+                  person={p}
+                  share={share}
+                  isPayer={p.name === meal.payer}
+                  onToggleFull={() => onTogglePaid(meal.id, p.name)}
+                  onSetAmount={(amt) => onSetAmount(meal.id, p.name, amt)}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      // ---------- PersonStatCard ----------
+      function PersonStatCard({ name, owed, paid, mealsCount, badge, meals, advanced, adjustment, adjustments, onAddAdjustment, onDeleteAdjustment }) {
+        const [open, setOpen] = useState(false);
+        const [adjOpen, setAdjOpen] = useState(adjustments.length > 0);
+        const [adding, setAdding] = useState(false);
+        const [sign, setSign] = useState("+");
+        const [amountDisplay, setAmountDisplay] = useState("");
+        const [note, setNote] = useState("");
+
+        const unpaid = owed - paid - adjustment;
+        const effectivePaid = paid + adjustment;
+        const pct = owed > 0 ? Math.max(0, Math.min(100, Math.round((effectivePaid / owed) * 100))) : 100;
+
+        const submitAdj = () => {
+          const amt = parseTyping(amountDisplay);
+          if (!amt) return;
+          onAddAdjustment(sign === "-" ? -amt : amt, note.trim());
+          setAmountDisplay(""); setNote(""); setSign("+"); setAdding(false); setAdjOpen(true);
+        };
+        const cancelAdj = () => { setAdding(false); setAmountDisplay(""); setNote(""); setSign("+"); };
+
+        return (
+          <div className="person-stat-card">
+            {badge && <div className="badge-tag">{badge}</div>}
+            <div className="person-stat-head">
+              <Avatar name={name} size={44} />
+              <div>
+                <div className="person-stat-name">{name}</div>
+                <button type="button" className="meals-toggle" onClick={() => setOpen((o) => !o)}>
+                  {mealsCount} bữa ăn {open ? "▴" : "▾"}
+                </button>
+              </div>
+            </div>
+
+            {open && (
+              <div className="meals-breakdown">
+                {meals.map((m) => (
+                  <div className="meals-breakdown-row" key={m.id}>
+                    <span className="mb-check">{m.fullyPaid ? "✅" : m.paidAmount > 0 ? "🌗" : "⏳"}</span>
+                    <span className="mb-name" title={m.name}>{m.name}</span>
+                    <span className="mb-amount">
+                      {m.paidAmount > 0 && !m.fullyPaid ? `${fmt(m.paidAmount)}/${fmt(m.share)}` : fmt(m.share)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="person-stat-total">{fmt(owed)}</div>
+            <div className="mini-progress-track">
+              <div className="mini-progress-fill" style={{ width: `${pct}%`, background: colorForName(name) }} />
+            </div>
+            {advanced > 0 && (
+              <div className="person-stat-row"><span>💸 Đã chi hộ nhóm</span><b style={{ color: "#8E7CC3" }}>{fmt(advanced)}</b></div>
+            )}
+            <div className="person-stat-row"><span>✅ Đã trả</span><b>{fmt(paid)}</b></div>
+
+            {adjustments.length > 0 && (
+              <div className="adj-toggle-row">
+                <button type="button" className="meals-toggle" onClick={() => setAdjOpen((o) => !o)}>
+                  🧾 Điều chỉnh {adjOpen ? "▴" : "▾"}
+                </button>
+                <b style={{ fontFamily: '"JetBrains Mono", monospace', color: adjustment >= 0 ? "#1d8f84" : "#d9483a" }}>
+                  {adjustment >= 0 ? "+" : "−"}{fmt(Math.abs(adjustment))}
+                </b>
+              </div>
+            )}
+
+            {adjOpen && adjustments.length > 0 && (
+              <div className="adj-list">
+                {adjustments.map((a) => (
+                  <div className="adj-row" key={a.id}>
+                    <span className="adj-note" title={a.note}>{a.note || (a.amount >= 0 ? "Cộng thêm" : "Trừ bớt")}</span>
+                    <span className={`adj-amount ${a.amount >= 0 ? "pos" : "neg"}`}>
+                      {a.amount >= 0 ? "+" : "−"}{fmt(Math.abs(a.amount))}
+                    </span>
+                    <button type="button" className="adj-del" onClick={() => onDeleteAdjustment(a.id)} title="Xoá khoản này">✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="person-stat-row"><span>⏳ Còn nợ</span><b style={{ color: unpaid > 0 ? "#FF6B57" : "#2EC4B6" }}>{fmt(unpaid)}</b></div>
+
+            {adding ? (
+              <div className="adj-form">
+                <div className="sign-toggle">
+                  <button type="button" className={`sign-btn ${sign === "+" ? "active-plus" : ""}`} onClick={() => setSign("+")}>+ Cộng thêm</button>
+                  <button type="button" className={`sign-btn ${sign === "-" ? "active-minus" : ""}`} onClick={() => setSign("-")}>− Trừ bớt</button>
+                </div>
+                <input
+                  className="input"
+                  inputMode="numeric"
+                  placeholder="Số tiền"
+                  value={amountDisplay}
+                  onChange={(e) => setAmountDisplay(formatTyping(e.target.value))}
+                  autoFocus
+                />
+                <input
+                  className="input"
+                  placeholder="Ghi chú (VD: chuyển khoản thêm, mua nước riêng...)"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") submitAdj(); }}
+                />
+                <div className="adj-form-actions">
+                  <button type="button" className="btn btn-outline" onClick={cancelAdj}>Huỷ</button>
+                  <button type="button" className="btn btn-primary" onClick={submitAdj}>Lưu</button>
+                </div>
+              </div>
+            ) : (
+              <button type="button" className="adj-add-btn" onClick={() => setAdding(true)}>± Cộng / trừ tiền + ghi chú</button>
+            )}
+          </div>
+        );
+      }
+
+      // ---------- MonthlyChart (thanh ngang CSS, không cần thư viện) ----------
+      function MonthlyChart({ data }) {
+        if (data.length === 0) return null;
+        const max = Math.max(...data.map((d) => d.total));
+        return (
+          <div className="card fun-shadow chart-card">
+            <div className="card-title">📊 Chi tiêu theo tháng</div>
+            {data.map((d) => (
+              <div className="chart-row" key={d.label}>
+                <div className="m-label">{d.label}</div>
+                <div className="m-track"><div className="m-fill" style={{ width: `${(d.total / max) * 100}%` }} /></div>
+                <div className="m-value">{fmt(d.total)}</div>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      // ---------- App ----------
+      function App() {
+        const [meals, setMeals] = useState(() => {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            // Chuyển dữ liệu cũ (paid: true/false) sang paidAmount để hỗ trợ trả một phần
+            return parsed.map((m) => {
+              const share = m.people.length ? m.amount / m.people.length : 0;
+              return {
+                ...m,
+                people: m.people.map((p) => ({
+                  name: p.name,
+                  paidAmount: p.paidAmount != null ? p.paidAmount : p.paid ? share : 0,
+                })),
+              };
+            });
+          } catch { return []; }
+        });
+        const [adjustments, setAdjustments] = useState(() => {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY_ADJ);
+            return raw ? JSON.parse(raw) : [];
+          } catch { return []; }
+        });
+        const [monthFilter, setMonthFilter] = useState("all");
+
+        const [roomId, setRoomId] = useState(() => {
+          try { return localStorage.getItem(STORAGE_KEY_ROOM) || "chung"; } catch { return "chung"; }
+        });
+        const [roomInput, setRoomInput] = useState(roomId);
+        const [syncStatus, setSyncStatus] = useState(db ? "connecting" : "offline");
+
+        useEffect(() => {
+          try { localStorage.setItem(STORAGE_KEY_ROOM, roomId); } catch {}
+        }, [roomId]);
+
+        // Lắng nghe dữ liệu realtime từ Firestore (nếu đã cấu hình)
+        useEffect(() => {
+          if (!db) { setSyncStatus("offline"); return; }
+          setSyncStatus("connecting");
+          const ref = db.collection("rooms").doc(roomId);
+          const unsub = ref.onSnapshot(
+            (snap) => {
+              const data = snap.data();
+              if (data) {
+                if (Array.isArray(data.meals)) setMeals(data.meals);
+                if (Array.isArray(data.adjustments)) setAdjustments(data.adjustments);
+              }
+              setSyncStatus("synced");
+            },
+            (err) => { console.error(err); setSyncStatus("error"); }
+          );
+          return () => unsub();
+        }, [roomId]);
+
+        useEffect(() => {
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(meals)); } catch {}
+        }, [meals]);
+
+        useEffect(() => {
+          try { localStorage.setItem(STORAGE_KEY_ADJ, JSON.stringify(adjustments)); } catch {}
+        }, [adjustments]);
+
+        const syncMeals = (nextMeals) => {
+          if (!db) return;
+          db.collection("rooms").doc(roomId).set({ meals: nextMeals }, { merge: true }).catch((e) => console.error(e));
+        };
+        const syncAdjustments = (nextAdjustments) => {
+          if (!db) return;
+          db.collection("rooms").doc(roomId).set({ adjustments: nextAdjustments }, { merge: true }).catch((e) => console.error(e));
+        };
+
+        const addMeal = (meal) => {
+          const next = [meal, ...meals];
+          setMeals(next);
+          syncMeals(next);
+        };
+        const deleteMeal = (id) => {
+          const next = meals.filter((x) => x.id !== id);
+          setMeals(next);
+          syncMeals(next);
+        };
+        const addAdjustment = (name, amount, note) => {
+          const next = [{ id: uid(), name, amount, note, date: new Date().toISOString().slice(0, 10) }, ...adjustments];
+          setAdjustments(next);
+          syncAdjustments(next);
+        };
+        const deleteAdjustment = (id) => {
+          const next = adjustments.filter((x) => x.id !== id);
+          setAdjustments(next);
+          syncAdjustments(next);
+        };
+        const togglePaid = (mealId, personName) => {
+          const next = meals.map((meal) => {
+            if (meal.id !== mealId) return meal;
+            const share = meal.amount / meal.people.length;
+            return {
+              ...meal,
+              people: meal.people.map((p) => {
+                if (p.name !== personName) return p;
+                const isFull = (p.paidAmount || 0) >= share - 0.5;
+                return { ...p, paidAmount: isFull ? 0 : share };
+              }),
+            };
+          });
+          setMeals(next);
+          syncMeals(next);
+        };
+        const setPersonAmount = (mealId, personName, amount) => {
+          const next = meals.map((meal) => {
+            if (meal.id !== mealId) return meal;
+            const share = meal.amount / meal.people.length;
+            const clamped = Math.max(0, Math.min(amount, share));
+            return {
+              ...meal,
+              people: meal.people.map((p) => (p.name === personName ? { ...p, paidAmount: clamped } : p)),
+            };
+          });
+          setMeals(next);
+          syncMeals(next);
+        };
+
+        const knownPeople = useMemo(() => {
+          const set = new Set();
+          meals.forEach((m) => m.people.forEach((p) => set.add(p.name)));
+          return Array.from(set);
+        }, [meals]);
+
+        const months = useMemo(() => {
+          const set = new Set(meals.map((m) => monthKey(m.date)));
+          adjustments.forEach((a) => set.add(monthKey(a.date)));
+          return Array.from(set).sort().reverse();
+        }, [meals, adjustments]);
+
+        const visibleMeals = useMemo(
+          () => (monthFilter === "all" ? meals : meals.filter((m) => monthKey(m.date) === monthFilter)),
+          [meals, monthFilter]
+        );
+        const visibleAdjustments = useMemo(
+          () => (monthFilter === "all" ? adjustments : adjustments.filter((a) => monthKey(a.date) === monthFilter)),
+          [adjustments, monthFilter]
+        );
+        const sortedMeals = useMemo(() => [...visibleMeals].sort((a, b) => (a.date < b.date ? 1 : -1)), [visibleMeals]);
+
+        const perPerson = useMemo(() => {
+          const map = {};
+          const ensure = (name) => {
+            if (!map[name]) map[name] = { name, owed: 0, paid: 0, mealsCount: 0, meals: [], advanced: 0, adjustment: 0, adjustments: [] };
+            return map[name];
+          };
+          visibleMeals.forEach((m) => {
+            const share = m.amount / m.people.length;
+            m.people.forEach((p) => {
+              const rec = ensure(p.name);
+              const paidAmount = Math.max(0, p.paidAmount || 0);
+              rec.owed += share;
+              rec.mealsCount += 1;
+              rec.paid += paidAmount;
+              rec.meals.push({ id: m.id, name: m.name, date: m.date, share, paidAmount, fullyPaid: paidAmount >= share - 0.5 });
+            });
+            if (m.payer) ensure(m.payer).advanced += m.amount;
+          });
+          visibleAdjustments.forEach((a) => {
+            const rec = ensure(a.name);
+            rec.adjustment += a.amount;
+            rec.adjustments.push(a);
+          });
+          Object.values(map).forEach((p) => {
+            p.meals.sort((a, b) => (a.date < b.date ? 1 : -1));
+            p.adjustments.sort((a, b) => (a.date < b.date ? 1 : -1));
+          });
+          return Object.values(map).sort((a, b) => b.owed - a.owed);
+        }, [visibleMeals, visibleAdjustments]);
+
+        const topSpenderName = perPerson.length ? perPerson[0].name : null;
+        const topDebtor = useMemo(() => {
+          const withDebt = perPerson.map((p) => ({ ...p, unpaid: p.owed - p.paid - p.adjustment })).filter((p) => p.unpaid > 0).sort((a, b) => b.unpaid - a.unpaid);
+          return withDebt.length ? withDebt[0].name : null;
+        }, [perPerson]);
+
+        const grandTotal = useMemo(() => visibleMeals.reduce((s, m) => s + m.amount, 0), [visibleMeals]);
+        const totalUnpaid = useMemo(() => perPerson.reduce((s, p) => s + (p.owed - p.paid - p.adjustment), 0), [perPerson]);
+        const allSettled = visibleMeals.length > 0 && totalUnpaid === 0;
+
+        const chartData = useMemo(() => {
+          const map = {};
+          meals.forEach((m) => { const k = monthKey(m.date); map[k] = (map[k] || 0) + m.amount; });
+          return Object.entries(map).sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, total]) => ({ label: monthLabel(k).replace("Tháng ", "T"), total }));
+        }, [meals]);
+
+        return (
+          <div className="app-bg">
+            <div className="blob blob-1" />
+            <div className="blob blob-2" />
+            <div className="blob blob-3" />
+            <div className="container">
+              <header className="header">
+                <div className="eyebrow">TIỆC TÙNG · HOÁ ĐƠN · CHIA ĐỀU</div>
+                <h1>Sổ Chia Tiền Vui 🍜</h1>
+                <p>Ghi bữa ăn, chia đều chi phí, tích ai đã trả — gọn trong một nốt nhạc.</p>
+              </header>
+
+              <div className="room-bar">
+                <span className="room-label">👥 Mã nhóm:</span>
+                <input
+                  className="input room-input"
+                  value={roomInput}
+                  onChange={(e) => setRoomInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") setRoomId(roomInput.trim() || "chung"); }}
+                  placeholder="vd: nhom-abc"
+                />
+                <button className="btn btn-outline" type="button" onClick={() => setRoomId(roomInput.trim() || "chung")}>
+                  Vào nhóm
+                </button>
+                <span className={`sync-badge sync-${syncStatus}`}>
+                  {syncStatus === "synced" && "☁️ Đã đồng bộ"}
+                  {syncStatus === "connecting" && "🔄 Đang kết nối..."}
+                  {syncStatus === "offline" && "📴 Chưa cấu hình Firebase"}
+                  {syncStatus === "error" && "⚠️ Lỗi kết nối"}
+                </span>
+              </div>
+
+              <MealForm onAdd={addMeal} knownPeople={knownPeople} />
+
+              {meals.length > 0 && (
+                <React.Fragment>
+                  <div className="section-head">
+                    <h2>🧾 Danh sách bữa ăn</h2>
+                    <select className="input select-month" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)}>
+                      <option value="all">Tất cả các tháng</option>
+                      {months.map((mk) => <option key={mk} value={mk}>{monthLabel(mk)}</option>)}
+                    </select>
+                  </div>
+
+                  {sortedMeals.length === 0 ? (
+                    <div className="empty-note">Không có bữa ăn nào trong tháng này.</div>
+                  ) : (
+                    <div className="meal-grid">
+                      {sortedMeals.map((m) => (
+                        <MealCard key={m.id} meal={m} onTogglePaid={togglePaid} onSetAmount={setPersonAmount} onDelete={deleteMeal} />
+                      ))}
+                    </div>
+                  )}
+
+                  {visibleMeals.length > 0 && (
+                    <React.Fragment>
+                      <div className="summary-banner">
+                        <div>
+                          <div className="summary-label">Tổng chi {monthFilter === "all" ? "tất cả" : monthLabel(monthFilter)}</div>
+                          <div className="summary-value">{fmt(grandTotal)}</div>
+                        </div>
+                        <div>
+                          <div className="summary-label">Còn chưa thu</div>
+                          <div className="summary-value" style={{ color: totalUnpaid > 0 ? "#FF6B57" : "#2EC4B6" }}>{fmt(totalUnpaid)}</div>
+                        </div>
+                        {allSettled && <div className="settled-flag">🎉 Đã thu đủ hết rồi!</div>}
+                      </div>
+
+                      <div className="section-head"><h2>🏅 Thống kê từng người</h2></div>
+                      <div className="stat-grid">
+                        {perPerson.map((p) => (
+                          <PersonStatCard
+                            key={p.name}
+                            name={p.name}
+                            owed={p.owed}
+                            paid={p.paid}
+                            mealsCount={p.mealsCount}
+                            meals={p.meals}
+                            advanced={p.advanced}
+                            adjustment={p.adjustment}
+                            adjustments={p.adjustments}
+                            onAddAdjustment={(amount, note) => addAdjustment(p.name, amount, note)}
+                            onDeleteAdjustment={(id) => deleteAdjustment(id)}
+                            badge={p.name === topSpenderName ? "🏆 Chi nhiều nhất" : p.name === topDebtor ? "🐢 Nợ dai nhất" : null}
+                          />
+                        ))}
+                      </div>
+                    </React.Fragment>
+                  )}
+
+                  <div style={{ marginTop: 22 }}><MonthlyChart data={chartData} /></div>
+                </React.Fragment>
+              )}
+
+              {meals.length === 0 && (
+                <div className="empty-state">
+                  🏆
+                  <div>Chưa có bữa ăn nào. Ghi bữa đầu tiên ở form phía trên nhé!</div>
+                </div>
+              )}
+
+              <footer className="footer">Dữ liệu lưu ngay trên trình duyệt này của bạn 🔒</footer>
+            </div>
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>
