@@ -22,6 +22,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
+    <!-- html2canvas: dùng để xuất ảnh biên nhận (nút "📸 Tải ảnh") -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 
     <style>
       :root {
@@ -100,6 +103,9 @@
       .section-head h2 { font-family: "Baloo 2", sans-serif; font-size: 20px; margin: 0; }
       .meal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
       .meal-card { padding: 18px; }
+      .meal-card-selected { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(46, 196, 182, 0.25); }
+      .meal-select-btn { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--border); background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0; flex-shrink: 0; font-size: 12px; font-weight: 700; margin-top: 2px; }
+      .meal-select-btn.checked { background: var(--teal); border-color: var(--teal); }
       .meal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
       .meal-name { font-weight: 700; font-size: 15.5px; }
       .meal-meta { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
@@ -128,7 +134,6 @@
       .settled-flag { margin-left: auto; display: flex; align-items: center; gap: 8px; background: rgba(46, 196, 182, 0.2); color: #6fe3d6; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; }
       .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
       .person-stat-card { position: relative; background: var(--paper); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
-      .badge-tag { position: absolute; top: -11px; right: 14px; background: var(--yellow); color: #4a3400; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; box-shadow: 0 4px 10px rgba(255, 201, 60, 0.4); }
       .person-stat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
       .person-stat-name { font-weight: 700; font-size: 14.5px; }
       .person-stat-sub { font-size: 11.5px; color: var(--muted); }
@@ -146,9 +151,7 @@
       .mb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
       .mb-amount { flex-shrink: 0; font-family: "JetBrains Mono", monospace; color: var(--muted); font-size: 11.5px; }
       .person-stat-total-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
-      .person-stat-total { font-family: "JetBrains Mono", monospace; font-size: 21px; font-weight: 700; margin-bottom: 2px; }
-      .person-stat-gross { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
-      .person-stat-gross b { font-family: "JetBrains Mono", monospace; color: var(--muted); font-weight: 600; }
+      .person-stat-total { font-family: "JetBrains Mono", monospace; font-size: 21px; font-weight: 700; margin-bottom: 10px; }
       .settled-mini-flag { display: inline-flex; align-items: center; gap: 4px; background: rgba(46, 196, 182, 0.15); color: #1d8f84; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; margin-bottom: 10px; }
       .mini-progress-track { height: 6px; border-radius: 4px; background: #f0e4d0; overflow: hidden; margin-bottom: 12px; }
       .mini-progress-fill { height: 100%; border-radius: 4px; }
@@ -170,18 +173,19 @@
       .adj-form-actions .btn { padding: 7px 14px; font-size: 13px; }
       .adj-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
       .adj-row { display: flex; align-items: center; gap: 8px; font-size: 12px; background: #fdf6ea; border-radius: 8px; padding: 6px 8px; }
-      .adj-row.is-paid { background: #f1f7ee; opacity: 0.7; }
-      .adj-paid-btn { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border); background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0; flex-shrink: 0; font-size: 11px; font-weight: 700; }
-      .adj-paid-btn.checked { background: var(--teal); border-color: var(--teal); }
       .adj-note { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
-      .adj-row.is-paid .adj-note { text-decoration: line-through; color: var(--muted); }
       .adj-amount { font-family: "JetBrains Mono", monospace; font-weight: 700; flex-shrink: 0; font-size: 12px; }
       .adj-amount.pos { color: #1d8f84; }
       .adj-amount.neg { color: #d9483a; }
-      .adj-row.is-paid .adj-amount.pos, .adj-row.is-paid .adj-amount.neg { color: var(--muted); }
-      .adj-paid-tag { font-size: 10px; font-weight: 700; color: #1d8f84; flex-shrink: 0; }
       .adj-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; flex-shrink: 0; padding: 0; }
       .adj-del:hover { color: #d9483a; }
+      .batch-hint { font-size: 12.5px; color: var(--muted); margin: -6px 0 14px; }
+      .batch-items { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+      .batch-item-row { display: flex; justify-content: space-between; font-size: 12.5px; background: #fdf6ea; border-radius: 8px; padding: 6px 8px; }
+      .batch-item-name { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .batch-item-amount { font-family: "JetBrains Mono", monospace; font-weight: 600; color: var(--ink); flex-shrink: 0; margin-left: 8px; }
+      .batch-total-box { margin-top: 12px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #2b2340, #3d3157); color: #fff; border-radius: 12px; padding: 10px 14px; font-size: 13.5px; font-weight: 600; }
+      .batch-total-box b { font-family: "JetBrains Mono", monospace; font-size: 17px; }
       .adj-toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; margin-top: 4px; color: var(--muted); }
       .chart-card { padding: 20px; }
       .chart-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -201,13 +205,24 @@
       .sync-connecting { background: #fff3ea; color: #b8482f; }
       .sync-offline { background: #f0e4d0; color: var(--muted); }
       .sync-error { background: #ffe4e0; color: #d9483a; }
+      .room-security-note {
+        max-width: 640px; margin: -12px auto 20px; text-align: center; font-size: 11.5px;
+        color: var(--muted); line-height: 1.5; background: #fff3ea; border-radius: 10px; padding: 8px 14px;
+      }
+      .room-security-note b { color: #b8482f; font-family: "JetBrains Mono", monospace; }
+      .meal-form-editing { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(46, 196, 182, 0.18); }
+      .stats-summary-line {
+        font-size: 13px; color: var(--muted); margin: -8px 0 14px; background: #fdf6ea;
+        border-radius: 10px; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center;
+      }
+      .stats-summary-line b { font-family: "JetBrains Mono", monospace; color: var(--ink); font-weight: 700; }
     </style>
   </head>
   <body>
     <div id="root"></div>
 
     <script type="text/babel" data-presets="react">
-      const { useState, useEffect, useMemo } = React;
+      const { useState, useEffect, useMemo, useRef } = React;
 
       // ---------- utils ----------
       const AVATAR_COLORS = ["#FF6B57", "#2EC4B6", "#FFC93C", "#8E7CC3", "#4C9F70", "#FF8FAB", "#5DA9E9", "#F49D37"];
@@ -228,6 +243,9 @@
         const [y, m] = key.split("-");
         return `Tháng ${parseInt(m, 10)}/${y}`;
       };
+      // Chuẩn hoá tên để so sánh (bỏ khoảng trắng thừa, không phân biệt hoa/thường)
+      const normName = (name) => String(name || "").trim().toLowerCase();
+      const EPS = 1; // sai số làm tròn cho phép (đồng), tránh lỗi số thực kiểu 99999.999999
       const colorForName = (name) => {
         let hash = 0;
         for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -275,20 +293,38 @@
       }
 
       // ---------- MealForm ----------
-      function MealForm({ onAdd, knownPeople }) {
-        const [name, setName] = useState("");
-        const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-        const [amountDisplay, setAmountDisplay] = useState("");
-        const [people, setPeople] = useState([]);
+      function MealForm({ onAdd, onUpdate, onCancelEdit, knownPeople, editingMeal }) {
+        const isEditing = !!editingMeal;
+        const [name, setName] = useState(() => editingMeal?.name || "");
+        const [date, setDate] = useState(() => editingMeal?.date || new Date().toISOString().slice(0, 10));
+        const [amountDisplay, setAmountDisplay] = useState(() =>
+          editingMeal ? formatTyping(String(Math.round(editingMeal.amount))) : ""
+        );
+        const [people, setPeople] = useState(() => editingMeal ? editingMeal.people.map((p) => p.name) : []);
         const [personInput, setPersonInput] = useState("");
-        const [payer, setPayer] = useState("");
+        const [payer, setPayer] = useState(() => editingMeal?.payer || "");
         const [error, setError] = useState("");
         const amount = parseTyping(amountDisplay);
 
+        // Khi chuyển sang sửa 1 bữa ăn khác, nạp lại dữ liệu form theo bữa đó
+        useEffect(() => {
+          if (!editingMeal) return;
+          setName(editingMeal.name);
+          setDate(editingMeal.date);
+          setAmountDisplay(formatTyping(String(Math.round(editingMeal.amount))));
+          setPeople(editingMeal.people.map((p) => p.name));
+          setPayer(editingMeal.payer || "");
+          setError("");
+        }, [editingMeal?.id]);
+
         const addPerson = (val) => {
-          const v = (val ?? personInput).trim();
-          if (!v) return;
-          if (people.some((p) => p.toLowerCase() === v.toLowerCase())) { setPersonInput(""); return; }
+          const raw = (val ?? personInput).trim();
+          if (!raw) return;
+          if (people.some((p) => normName(p) === normName(raw))) { setPersonInput(""); return; }
+          // Nếu tên này (không phân biệt hoa/thường) đã từng xuất hiện trước đó,
+          // dùng lại đúng cách viết cũ để tránh tách thành 2 người khác nhau trong thống kê.
+          const existing = knownPeople.find((kp) => normName(kp) === normName(raw));
+          const v = existing || raw;
           const next = [...people, v];
           setPeople(next);
           setPersonInput("");
@@ -306,6 +342,30 @@
           if (people.length === 0) return setError("Cần ít nhất 1 người tham gia 🙋");
           if (!payer) return setError("Chọn ai đã chi tiền trước cho bữa này nhé 💸");
           const share = amount / people.length;
+
+          if (isEditing) {
+            // Giữ lại số tiền đã trả (paidAmount) của những người vẫn còn tham gia bữa này;
+            // người mới thêm vào thì bắt đầu từ 0 (trừ khi họ là người chi tiền trước).
+            const oldByKey = {};
+            editingMeal.people.forEach((p) => { oldByKey[normName(p.name)] = p.paidAmount || 0; });
+            onUpdate({
+              ...editingMeal,
+              name: name.trim(),
+              date,
+              amount,
+              payer,
+              people: people.map((p) => {
+                const key = normName(p);
+                const prevPaid = oldByKey[key];
+                const paidAmount = prevPaid != null
+                  ? Math.min(prevPaid, share)
+                  : (p === payer ? share : 0);
+                return { name: p, paidAmount };
+              }),
+            });
+            return;
+          }
+
           onAdd({
             id: uid(),
             name: name.trim(),
@@ -323,8 +383,8 @@
         );
 
         return (
-          <div className="card fun-shadow" style={{ padding: 22 }}>
-            <div className="card-title">🍽️ Ghi bữa ăn mới</div>
+          <div className={`card fun-shadow ${isEditing ? "meal-form-editing" : ""}`} style={{ padding: 22 }}>
+            <div className="card-title">{isEditing ? "✏️ Sửa bữa ăn" : "🍽️ Ghi bữa ăn mới"}</div>
             <div className="form-grid">
               <div>
                 <label className="label">Tên bữa ăn</label>
@@ -399,7 +459,14 @@
             )}
 
             {error && <div className="error-text">{error}</div>}
-            <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={submit} type="button">+ Lưu bữa ăn</button>
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button className="btn btn-primary" onClick={submit} type="button">
+                {isEditing ? "💾 Lưu thay đổi" : "+ Lưu bữa ăn"}
+              </button>
+              {isEditing && (
+                <button className="btn btn-outline" onClick={onCancelEdit} type="button">✖️ Huỷ sửa</button>
+              )}
+            </div>
           </div>
         );
       }
@@ -475,7 +542,7 @@
       }
 
       // ---------- MealCard ----------
-      function MealCard({ meal, onTogglePaid, onSetAmount, onDelete }) {
+      function MealCard({ meal, onTogglePaid, onSetAmount, onDelete, onEdit, selected, onToggleSelect }) {
         const share = meal.amount / meal.people.length;
         const totalPaid = meal.people.reduce((s, p) => s + Math.max(0, p.paidAmount || 0), 0);
         const paidCount = meal.people.filter((p) => (p.paidAmount || 0) >= share - 0.5).length;
@@ -483,18 +550,31 @@
         const progressPct = meal.amount > 0 ? Math.min(100, (totalPaid / meal.amount) * 100) : 0;
 
         return (
-          <div className="card meal-card">
+          <div className={`card meal-card ${selected ? "meal-card-selected" : ""}`}>
             <div className="meal-head">
-              <div>
-                <div className="meal-name">{meal.name}</div>
-                <div className="meal-meta">{meal.date} · {meal.people.length} người · {fmt(share)}/người</div>
-                {meal.payer && (
-                  <div className="payer-tag">💸 {meal.payer} đã chi trước {fmt(meal.amount)}</div>
-                )}
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <button
+                  type="button"
+                  className={`meal-select-btn ${selected ? "checked" : ""}`}
+                  onClick={() => onToggleSelect(meal.id)}
+                  title={selected ? "Bỏ khỏi đợt đang chọn" : "Thêm vào đợt để xem/chụp riêng"}
+                >
+                  {selected ? "✓" : ""}
+                </button>
+                <div>
+                  <div className="meal-name">{meal.name}</div>
+                  <div className="meal-meta">{meal.date} · {meal.people.length} người · {fmt(share)}/người</div>
+                  {meal.payer && (
+                    <div className="payer-tag">💸 {meal.payer} đã chi trước {fmt(meal.amount)}</div>
+                  )}
+                </div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div className="meal-amount">{fmt(meal.amount)}</div>
-                <button className="icon-btn" onClick={() => onDelete(meal.id)} type="button" title="Xoá bữa ăn">🗑️ Xoá</button>
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <button className="icon-btn" onClick={() => onEdit(meal)} type="button" title="Sửa bữa ăn">✏️ Sửa</button>
+                  <button className="icon-btn" onClick={() => onDelete(meal.id)} type="button" title="Xoá bữa ăn">🗑️ Xoá</button>
+                </div>
               </div>
             </div>
 
@@ -524,7 +604,7 @@
       }
 
       // ---------- PersonStatCard ----------
-      function PersonStatCard({ name, owed, paid, mealsCount, badge, meals, advanced, adjustment, activeAdjustment, adjustments, onAddAdjustment, onDeleteAdjustment, onToggleAdjustmentPaid }) {
+      function PersonStatCard({ name, owed, paid, mealsCount, meals, advanced, adjustment, adjustments, onAddAdjustment, onDeleteAdjustment }) {
         const [open, setOpen] = useState(false);
         const [adjOpen, setAdjOpen] = useState(adjustments.length > 0);
         const [adding, setAdding] = useState(false);
@@ -532,9 +612,10 @@
         const [amountDisplay, setAmountDisplay] = useState("");
         const [note, setNote] = useState("");
 
-        const unpaid = owed - paid - activeAdjustment;
-        const effectivePaid = paid + activeAdjustment;
+        const unpaid = owed - paid - adjustment;
+        const effectivePaid = paid + adjustment;
         const pct = owed > 0 ? Math.max(0, Math.min(100, Math.round((effectivePaid / owed) * 100))) : 100;
+        const isSettled = unpaid < EPS;
 
         const submitAdj = () => {
           const amt = parseTyping(amountDisplay);
@@ -546,7 +627,6 @@
 
         return (
           <div className="person-stat-card">
-            {badge && <div className="badge-tag">{badge}</div>}
             <div className="person-stat-head">
               <Avatar name={name} size={44} />
               <div>
@@ -572,17 +652,21 @@
             )}
 
             <div className="person-stat-total-label">⏳ Còn nợ</div>
-            {unpaid <= 0 ? (
-              <div className="settled-mini-flag">✅ Đã thanh toán</div>
+            {isSettled ? (
+              <div className="settled-mini-flag">✅ Hết nợ</div>
             ) : (
               <div className="person-stat-total" style={{ color: "#FF6B57" }}>{fmt(unpaid)}</div>
             )}
-            <div className="person-stat-gross">Tổng nợ gốc: <b>{fmt(owed)}</b></div>
             <div className="mini-progress-track">
               <div className="mini-progress-fill" style={{ width: `${pct}%`, background: colorForName(name) }} />
             </div>
             {advanced > 0 && (
-              <div className="person-stat-row"><span>💸 Đã chi hộ nhóm</span><b style={{ color: "#8E7CC3" }}>{fmt(advanced)}</b></div>
+              <div
+                className="person-stat-row"
+                title="Số tiền bạn đã ứng trước cho cả bữa. Đây chỉ là số liệu tham khảo — hệ thống KHÔNG tự trừ khoản này vào nợ của người khác, mỗi người vẫn cần thanh toán phần của mình vào quỹ chung."
+              >
+                <span>💸 Đã chi hộ nhóm ⓘ</span><b style={{ color: "#8E7CC3" }}>{fmt(advanced)}</b>
+              </div>
             )}
             <div className="person-stat-row"><span>✅ Đã trả</span><b>{fmt(paid)}</b></div>
 
@@ -591,8 +675,8 @@
                 <button type="button" className="meals-toggle" onClick={() => setAdjOpen((o) => !o)}>
                   🧾 Điều chỉnh {adjOpen ? "▴" : "▾"}
                 </button>
-                <b style={{ fontFamily: '"JetBrains Mono", monospace', color: activeAdjustment >= 0 ? "#1d8f84" : "#d9483a" }}>
-                  {activeAdjustment >= 0 ? "+" : "−"}{fmt(Math.abs(activeAdjustment))}
+                <b style={{ fontFamily: '"JetBrains Mono", monospace', color: adjustment >= 0 ? "#1d8f84" : "#d9483a" }}>
+                  {adjustment >= 0 ? "+" : "−"}{fmt(Math.abs(adjustment))}
                 </b>
               </div>
             )}
@@ -600,17 +684,8 @@
             {adjOpen && adjustments.length > 0 && (
               <div className="adj-list">
                 {adjustments.map((a) => (
-                  <div className={`adj-row ${a.paid ? "is-paid" : ""}`} key={a.id}>
-                    <button
-                      type="button"
-                      className={`adj-paid-btn ${a.paid ? "checked" : ""}`}
-                      onClick={() => onToggleAdjustmentPaid(a.id)}
-                      title={a.paid ? "Bỏ đánh dấu đã thanh toán" : "Đánh dấu đã thanh toán"}
-                    >
-                      {a.paid ? "✓" : ""}
-                    </button>
+                  <div className="adj-row" key={a.id}>
                     <span className="adj-note" title={a.note}>{a.note || (a.amount >= 0 ? "Giảm nợ" : "Tăng nợ")}</span>
-                    {a.paid && <span className="adj-paid-tag">Đã trả</span>}
                     <span className={`adj-amount ${a.amount >= 0 ? "pos" : "neg"}`}>
                       {a.amount >= 0 ? "+" : "−"}{fmt(Math.abs(a.amount))}
                     </span>
@@ -654,6 +729,82 @@
             ) : (
               <button type="button" className="adj-add-btn" onClick={() => setAdding(true)}>± Cộng / trừ tiền + ghi chú</button>
             )}
+          </div>
+        );
+      }
+
+      // ---------- BatchReceiptCard (biên nhận theo đợt tự chọn) ----------
+      function BatchReceiptCard({ data }) {
+        const { name, oldDebt, batchItems, batchTotal, grandTotal } = data;
+        const cardRef = useRef(null);
+        const [capturing, setCapturing] = useState(false);
+
+        const downloadImage = async () => {
+          if (!cardRef.current || typeof html2canvas === "undefined") {
+            alert("Không tải được thư viện xuất ảnh (html2canvas). Kiểm tra lại kết nối mạng rồi thử lại.");
+            return;
+          }
+          setCapturing(true);
+          try {
+            const canvas = await html2canvas(cardRef.current, { backgroundColor: "#fffdf8", scale: 2 });
+            const link = document.createElement("a");
+            link.download = `bien-nhan-${name.replace(/\s+/g, "-").toLowerCase()}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+          } catch (e) {
+            console.error(e);
+            alert("Xuất ảnh thất bại, bạn có thể chụp màn hình thủ công thay thế.");
+          } finally {
+            setCapturing(false);
+          }
+        };
+
+        return (
+          <div className="person-stat-card" ref={cardRef}>
+            <div className="person-stat-head">
+              <Avatar name={name} size={44} />
+              <div>
+                <div className="person-stat-name">{name}</div>
+                <div className="person-stat-sub">{batchItems.length} bữa trong đợt này</div>
+              </div>
+            </div>
+
+            <div className="person-stat-row"><span>⏳ Nợ cũ (trước đợt này)</span><b style={{ color: oldDebt > 0 ? "#FF6B57" : "#2EC4B6" }}>{fmt(oldDebt)}</b></div>
+
+            <div className="batch-items">
+              {batchItems.map((it) => {
+                const isPaid = it.remaining <= 0.5;
+                const isPartial = it.paidAmount > 0 && !isPaid;
+                return (
+                  <div className="batch-item-row" key={it.id}>
+                    <span className="batch-item-name" title={it.name}>
+                      {it.name}
+                      {isPaid && " ✅"}
+                      {isPartial && " 🌗"}
+                    </span>
+                    <span className="batch-item-amount">
+                      {isPaid ? (
+                        <span style={{ color: "#1d8f84" }}>Đã trả</span>
+                      ) : isPartial ? (
+                        `${fmt(it.remaining)} (đã trả ${fmt(it.paidAmount)}/${fmt(it.share)})`
+                      ) : (
+                        fmt(it.remaining)
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="person-stat-row"><span>🍜 Còn thiếu đợt này</span><b>{fmt(batchTotal)}</b></div>
+
+            <div className="batch-total-box">
+              <span>Tổng cần trả</span>
+              <b>{fmt(grandTotal)}</b>
+            </div>
+
+            <button type="button" className="adj-add-btn" onClick={downloadImage} disabled={capturing} data-html2canvas-ignore="true">
+              {capturing ? "⏳ Đang xuất ảnh..." : "📸 Tải ảnh biên nhận"}
+            </button>
           </div>
         );
       }
@@ -702,9 +853,22 @@
           } catch { return []; }
         });
         const [monthFilter, setMonthFilter] = useState("all");
+        const [editingMealId, setEditingMealId] = useState(null);
+        const [selectedMealIds, setSelectedMealIds] = useState([]);
+        const toggleMealSelect = (id) => {
+          setSelectedMealIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+        };
+        const clearMealSelection = () => setSelectedMealIds([]);
 
         const [roomId, setRoomId] = useState(() => {
-          try { return localStorage.getItem(STORAGE_KEY_ROOM) || "chung"; } catch { return "chung"; }
+          try {
+            const saved = localStorage.getItem(STORAGE_KEY_ROOM);
+            if (saved) return saved;
+            // Chưa từng dùng app này: sinh mã nhóm ngẫu nhiên riêng, KHÔNG dùng mã
+            // mặc định cố định ("chung"), để tránh dữ liệu bị trộn lẫn với người
+            // dùng khác cũng mở file này mà quên đổi mã nhóm.
+            return "nhom-" + uid();
+          } catch { return "nhom-" + uid(); }
         });
         const [roomInput, setRoomInput] = useState(roomId);
         const [syncStatus, setSyncStatus] = useState(db ? "connecting" : "offline");
@@ -755,22 +919,39 @@
           syncMeals(next);
         };
         const deleteMeal = (id) => {
+          const meal = meals.find((x) => x.id === id);
+          const label = meal ? `"${meal.name}"` : "bữa ăn này";
+          if (!window.confirm(`Xoá ${label}? Hành động này không thể hoàn tác.`)) return;
           const next = meals.filter((x) => x.id !== id);
           setMeals(next);
           syncMeals(next);
+          if (editingMealId === id) setEditingMealId(null);
         };
+        const updateMeal = (updatedMeal) => {
+          const next = meals.map((m) => (m.id === updatedMeal.id ? updatedMeal : m));
+          setMeals(next);
+          syncMeals(next);
+          setEditingMealId(null);
+        };
+        const startEditMeal = (meal) => {
+          setEditingMealId(meal.id);
+          // Cuộn lên form để người dùng thấy form đang chuyển sang chế độ Sửa
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        };
+        const cancelEditMeal = () => setEditingMealId(null);
+        const editingMeal = editingMealId ? meals.find((m) => m.id === editingMealId) || null : null;
         const addAdjustment = (name, amount, note) => {
-          const next = [{ id: uid(), name, amount, note, paid: false, date: new Date().toISOString().slice(0, 10) }, ...adjustments];
+          const today = new Date().toISOString().slice(0, 10);
+          // Nếu đang lọc theo 1 tháng cụ thể (khác "Tất cả"), gán ngày điều chỉnh vào
+          // giữa tháng đó để nó không "biến mất" khỏi view đang xem sau khi lưu.
+          const date = monthFilter !== "all" ? `${monthFilter}-15` : today;
+          const next = [{ id: uid(), name, amount, note, date }, ...adjustments];
           setAdjustments(next);
           syncAdjustments(next);
         };
         const deleteAdjustment = (id) => {
+          if (!window.confirm("Xoá khoản điều chỉnh này?")) return;
           const next = adjustments.filter((x) => x.id !== id);
-          setAdjustments(next);
-          syncAdjustments(next);
-        };
-        const toggleAdjustmentPaid = (id) => {
-          const next = adjustments.map((x) => (x.id === id ? { ...x, paid: !x.paid } : x));
           setAdjustments(next);
           syncAdjustments(next);
         };
@@ -805,9 +986,12 @@
         };
 
         const knownPeople = useMemo(() => {
-          const set = new Set();
-          meals.forEach((m) => m.people.forEach((p) => set.add(p.name)));
-          return Array.from(set);
+          const map = new Map(); // key: tên chuẩn hoá -> giá trị: cách viết xuất hiện đầu tiên
+          meals.forEach((m) => m.people.forEach((p) => {
+            const key = normName(p.name);
+            if (!map.has(key)) map.set(key, p.name);
+          }));
+          return Array.from(map.values());
         }, [meals]);
 
         const months = useMemo(() => {
@@ -829,8 +1013,9 @@
         const perPerson = useMemo(() => {
           const map = {};
           const ensure = (name) => {
-            if (!map[name]) map[name] = { name, owed: 0, paid: 0, mealsCount: 0, meals: [], advanced: 0, adjustment: 0, activeAdjustment: 0, adjustments: [] };
-            return map[name];
+            const key = normName(name);
+            if (!map[key]) map[key] = { name, owed: 0, paid: 0, mealsCount: 0, meals: [], advanced: 0, adjustment: 0, adjustments: [] };
+            return map[key];
           };
           visibleMeals.forEach((m) => {
             const share = m.amount / m.people.length;
@@ -847,7 +1032,6 @@
           visibleAdjustments.forEach((a) => {
             const rec = ensure(a.name);
             rec.adjustment += a.amount;
-            if (!a.paid) rec.activeAdjustment += a.amount;
             rec.adjustments.push(a);
           });
           Object.values(map).forEach((p) => {
@@ -857,15 +1041,53 @@
           return Object.values(map).sort((a, b) => b.owed - a.owed);
         }, [visibleMeals, visibleAdjustments]);
 
-        const topSpenderName = perPerson.length ? perPerson[0].name : null;
-        const topDebtor = useMemo(() => {
-          const withDebt = perPerson.map((p) => ({ ...p, unpaid: p.owed - p.paid - p.activeAdjustment })).filter((p) => p.unpaid > 0).sort((a, b) => b.unpaid - a.unpaid);
-          return withDebt.length ? withDebt[0].name : null;
-        }, [perPerson]);
-
         const grandTotal = useMemo(() => visibleMeals.reduce((s, m) => s + m.amount, 0), [visibleMeals]);
-        const totalUnpaid = useMemo(() => perPerson.reduce((s, p) => s + (p.owed - p.paid - p.activeAdjustment), 0), [perPerson]);
-        const allSettled = visibleMeals.length > 0 && totalUnpaid === 0;
+        // Tính giống hệt công thức "còn nợ" ở từng thẻ cá nhân (owed - paid - adjustment)
+        // để tổng ở banner luôn khớp với tổng cộng dồn từ các thẻ bên dưới.
+        const totalUnpaid = useMemo(
+          () => perPerson.reduce((s, p) => s + Math.max(0, p.owed - p.paid - p.adjustment), 0),
+          [perPerson]
+        );
+        const allSettled = visibleMeals.length > 0 && totalUnpaid < EPS;
+
+        const batchData = useMemo(() => {
+          if (selectedMealIds.length === 0) return [];
+          const map = {};
+          const ensure = (name) => {
+            const key = normName(name);
+            if (!map[key]) map[key] = { name, oldOwed: 0, oldPaid: 0, oldAdjustment: 0, batchItems: [], batchTotal: 0 };
+            return map[key];
+          };
+          meals.forEach((m) => {
+            const share = m.amount / m.people.length;
+            const isSelected = selectedMealIds.includes(m.id);
+            m.people.forEach((p) => {
+              const rec = ensure(p.name);
+              const paidAmount = Math.max(0, p.paidAmount || 0);
+              if (isSelected) {
+                // Trừ phần đã tích thanh toán trước đó, chỉ tính số còn thiếu vào biên nhận
+                const remaining = Math.max(0, share - paidAmount);
+                rec.batchItems.push({ id: m.id, name: m.name, date: m.date, share, paidAmount, remaining });
+                rec.batchTotal += remaining;
+              } else {
+                rec.oldOwed += share;
+                rec.oldPaid += paidAmount;
+              }
+            });
+          });
+          adjustments.forEach((a) => {
+            ensure(a.name).oldAdjustment += a.amount;
+          });
+          return Object.values(map)
+            .filter((p) => p.batchItems.length > 0)
+            .map((p) => {
+              const oldDebt = p.oldOwed - p.oldPaid - p.oldAdjustment;
+              return { ...p, oldDebt, grandTotal: oldDebt + p.batchTotal };
+            })
+            // Ai không còn nợ gì (Tổng cần trả <= 0) thì không cần hiện biên nhận nữa
+            .filter((p) => p.grandTotal > EPS)
+            .sort((a, b) => b.grandTotal - a.grandTotal);
+        }, [meals, adjustments, selectedMealIds]);
 
         const chartData = useMemo(() => {
           const map = {};
@@ -904,8 +1126,21 @@
                   {syncStatus === "error" && "⚠️ Lỗi kết nối"}
                 </span>
               </div>
+              {db && (
+                <div className="room-security-note">
+                  🔒 Chỉ chia sẻ mã nhóm <b>{roomId}</b> cho đúng người trong nhóm — ai biết mã này (và nếu
+                  Firestore Rules đang ở chế độ mở) đều xem/sửa được dữ liệu. Nhớ kiểm tra lại Firestore
+                  Security Rules trên Firebase Console để giới hạn quyền truy cập.
+                </div>
+              )}
 
-              <MealForm onAdd={addMeal} knownPeople={knownPeople} />
+              <MealForm
+                onAdd={addMeal}
+                onUpdate={updateMeal}
+                onCancelEdit={cancelEditMeal}
+                knownPeople={knownPeople}
+                editingMeal={editingMeal}
+              />
 
               {meals.length > 0 && (
                 <React.Fragment>
@@ -916,15 +1151,48 @@
                       {months.map((mk) => <option key={mk} value={mk}>{monthLabel(mk)}</option>)}
                     </select>
                   </div>
+                  <div className="batch-hint">☑️ Tích chọn các bữa ăn bên dưới để gộp thành 1 đợt, xem biên nhận riêng cho từng người rồi chụp gửi.</div>
 
                   {sortedMeals.length === 0 ? (
                     <div className="empty-note">Không có bữa ăn nào trong tháng này.</div>
                   ) : (
                     <div className="meal-grid">
                       {sortedMeals.map((m) => (
-                        <MealCard key={m.id} meal={m} onTogglePaid={togglePaid} onSetAmount={setPersonAmount} onDelete={deleteMeal} />
+                        <MealCard
+                          key={m.id}
+                          meal={m}
+                          onTogglePaid={togglePaid}
+                          onSetAmount={setPersonAmount}
+                          onDelete={deleteMeal}
+                          onEdit={startEditMeal}
+                          selected={selectedMealIds.includes(m.id)}
+                          onToggleSelect={toggleMealSelect}
+                        />
                       ))}
                     </div>
+                  )}
+
+                  {selectedMealIds.length > 0 && (
+                    <React.Fragment>
+                      <div className="section-head">
+                        <h2>📸 Biên nhận theo đợt đã chọn ({selectedMealIds.length} bữa)</h2>
+                        <button type="button" className="btn btn-outline" onClick={clearMealSelection}>Bỏ chọn</button>
+                      </div>
+                      {batchData.length > 0 ? (
+                        <React.Fragment>
+                          <div className="batch-hint">
+                            ℹ️ "Nợ cũ" tính trên <b>toàn bộ lịch sử</b> (không giới hạn theo bộ lọc tháng đang chọn ở trên), để phản ánh đúng tổng nợ thực tế cần thu. Ai đã trả đủ (Tổng cần trả = 0) sẽ không hiện ở đây.
+                          </div>
+                          <div className="stat-grid">
+                            {batchData.map((p) => (
+                              <BatchReceiptCard key={p.name} data={p} />
+                            ))}
+                          </div>
+                        </React.Fragment>
+                      ) : (
+                        <div className="empty-note">🎉 Mọi người trong đợt này đều đã thanh toán đủ, không còn ai cần gửi biên nhận!</div>
+                      )}
+                    </React.Fragment>
                   )}
 
                   {visibleMeals.length > 0 && (
@@ -941,7 +1209,18 @@
                         {allSettled && <div className="settled-flag">🎉 Đã thu đủ hết rồi!</div>}
                       </div>
 
-                      <div className="section-head"><h2>🏅 Thống kê từng người</h2></div>
+                      <div className="section-head">
+                        <h2>🏅 Thống kê từng người</h2>
+                        <select className="input select-month" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)}>
+                          <option value="all">Tất cả các tháng</option>
+                          {months.map((mk) => <option key={mk} value={mk}>{monthLabel(mk)}</option>)}
+                        </select>
+                      </div>
+                      <div className="stats-summary-line">
+                        📅 {monthFilter === "all" ? "Tất cả các tháng" : monthLabel(monthFilter)} · 👥 {perPerson.length} người ·
+                        {" "}🍜 Tổng chi <b>{fmt(grandTotal)}</b> ·
+                        {" "}⏳ Còn thiếu <b style={{ color: totalUnpaid > 0 ? "#FF6B57" : "#2EC4B6" }}>{fmt(totalUnpaid)}</b>
+                      </div>
                       <div className="stat-grid">
                         {perPerson.map((p) => (
                           <PersonStatCard
@@ -953,12 +1232,9 @@
                             meals={p.meals}
                             advanced={p.advanced}
                             adjustment={p.adjustment}
-                            activeAdjustment={p.activeAdjustment}
                             adjustments={p.adjustments}
                             onAddAdjustment={(amount, note) => addAdjustment(p.name, amount, note)}
                             onDeleteAdjustment={(id) => deleteAdjustment(id)}
-                            onToggleAdjustmentPaid={(id) => toggleAdjustmentPaid(id)}
-                            badge={p.name === topSpenderName ? "🏆 Chi nhiều nhất" : p.name === topDebtor ? "🐢 Nợ dai nhất" : null}
                           />
                         ))}
                       </div>
