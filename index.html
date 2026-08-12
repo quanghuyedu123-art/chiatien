@@ -21,6 +21,23 @@
     <!-- html2canvas: dùng để xuất ảnh biên nhận (nút "📸 Tải ảnh") -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
+    <!-- Firebase (bản "compat" để dùng trực tiếp qua thẻ script, không cần build) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyDr-vZVbTWbrvQ7amglNm1Zb70EvghUUbk",
+        authDomain: "chi-tieu-an.firebaseapp.com",
+        projectId: "chi-tieu-an",
+        storageBucket: "chi-tieu-an.firebasestorage.app",
+        messagingSenderId: "692351717728",
+        appId: "1:692351717728:web:2c4a8901fc373cb4ef0e05",
+        measurementId: "G-L55NX997GQ",
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+    </script>
+
 
     <style>
       :root {
@@ -201,6 +218,13 @@
       }
       .attach-toggle input { flex-shrink: 0; width: 15px; height: 15px; cursor: pointer; }
       .attach-thumb { width: 26px; height: 26px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); flex-shrink: 0; }
+      .sync-pill {
+        font-size: 15px; vertical-align: middle; display: inline-block;
+        background: var(--paper); border: 1px solid var(--border); border-radius: 20px;
+        padding: 3px 8px; margin-left: 4px;
+      }
+      .sync-pill-ok { border-color: rgba(46, 196, 182, 0.4); }
+      .sync-pill-err { border-color: rgba(217, 72, 58, 0.4); }
     </style>
   </head>
   <body>
@@ -263,6 +287,10 @@
         });
       const STORAGE_KEY = "so-chia-tien-vui:meals";
       const STORAGE_KEY_ADJ = "so-chia-tien-vui:adjustments";
+      // Đồng bộ đa thiết bị: tất cả máy mở CHÍNH file HTML này đều tự động dùng
+      // chung 1 "phòng" cố định trên Firestore — không cần nhập mã gì cả,
+      // giống cơ chế FB_URL cố định của app Pickleball.
+      const ROOM_ID = "chi-tieu-mac-dinh";
 
       // ---------- Avatar ----------
       function Avatar({ name, size = 32 }) {
@@ -829,13 +857,46 @@
         };
         const clearMealSelection = () => setSelectedMealIds([]);
 
+        // ---------- Đồng bộ nhiều máy qua Firestore (phòng cố định, tự động) ----------
+        const [syncStatus, setSyncStatus] = useState("connecting"); // connecting | synced | saving | error
+        const isRemoteUpdate = useRef(false);
+
+        // Lắng nghe thay đổi realtime từ Firestore ngay khi mở app
+        useEffect(() => {
+          setSyncStatus("connecting");
+          const ref = db.collection("rooms").doc(ROOM_ID);
+          let isFirst = true;
+          const unsub = ref.onSnapshot(
+            (snap) => {
+              if (snap.exists) {
+                const data = snap.data() || {};
+                isRemoteUpdate.current = true;
+                setMeals(Array.isArray(data.meals) ? data.meals : []);
+                setAdjustments(Array.isArray(data.adjustments) ? data.adjustments : []);
+              } else if (isFirst) {
+                // Phòng chưa tồn tại trên Firestore -> khởi tạo bằng dữ liệu hiện có trên máy này
+                ref.set({ meals, adjustments, updatedAt: Date.now() }).catch(() => setSyncStatus("error"));
+              }
+              isFirst = false;
+              setSyncStatus("synced");
+            },
+            (err) => { console.error(err); setSyncStatus("error"); }
+          );
+          return () => unsub();
+          // eslint-disable-next-line
+        }, []);
+
+        // Lưu cục bộ (luôn luôn) + đẩy lên Firestore khi thay đổi là do người dùng máy này gây ra
         useEffect(() => {
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(meals)); } catch {}
-        }, [meals]);
-
-        useEffect(() => {
           try { localStorage.setItem(STORAGE_KEY_ADJ, JSON.stringify(adjustments)); } catch {}
-        }, [adjustments]);
+          if (isRemoteUpdate.current) { isRemoteUpdate.current = false; return; }
+          setSyncStatus("saving");
+          db.collection("rooms").doc(ROOM_ID)
+            .set({ meals, adjustments, updatedAt: Date.now() }, { merge: true })
+            .then(() => setSyncStatus("synced"))
+            .catch((err) => { console.error(err); setSyncStatus("error"); });
+        }, [meals, adjustments]);
 
         const addMeal = (meal) => {
           const next = [meal, ...meals];
@@ -1019,7 +1080,21 @@
             <div className="container">
               <header className="header">
                 <div className="eyebrow">TIỆC TÙNG · HOÁ ĐƠN · CHIA ĐỀU</div>
-                <h1>Sổ Chia Tiền Vui 🍜</h1>
+                <h1>
+                  Sổ Chia Tiền Vui 🍜{" "}
+                  {syncStatus === "connecting" && (
+                    <span className="sync-pill" title="Đang kết nối...">⏳</span>
+                  )}
+                  {syncStatus === "saving" && (
+                    <span className="sync-pill" title="Đang lưu...">⏳</span>
+                  )}
+                  {syncStatus === "synced" && (
+                    <span className="sync-pill sync-pill-ok" title="Đã đồng bộ với các máy khác">✅</span>
+                  )}
+                  {syncStatus === "error" && (
+                    <span className="sync-pill sync-pill-err" title="Lỗi kết nối đồng bộ">⚠️</span>
+                  )}
+                </h1>
                 <p>Ghi bữa ăn, chia đều chi phí, tích ai đã trả — gọn trong một nốt nhạc.</p>
               </header>
 
