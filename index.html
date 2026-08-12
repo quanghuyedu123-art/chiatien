@@ -523,7 +523,7 @@
       }
 
       // ---------- PersonStatCard ----------
-      function PersonStatCard({ name, owed, paid, mealsCount, badge, meals, advanced, adjustment, adjustments, onAddAdjustment, onDeleteAdjustment, onToggleAdjustmentPaid }) {
+      function PersonStatCard({ name, owed, paid, mealsCount, badge, meals, advanced, adjustment, activeAdjustment, adjustments, onAddAdjustment, onDeleteAdjustment, onToggleAdjustmentPaid }) {
         const [open, setOpen] = useState(false);
         const [adjOpen, setAdjOpen] = useState(adjustments.length > 0);
         const [adding, setAdding] = useState(false);
@@ -531,8 +531,8 @@
         const [amountDisplay, setAmountDisplay] = useState("");
         const [note, setNote] = useState("");
 
-        const unpaid = owed - paid - adjustment;
-        const effectivePaid = paid + adjustment;
+        const unpaid = owed - paid - activeAdjustment;
+        const effectivePaid = paid + activeAdjustment;
         const pct = owed > 0 ? Math.max(0, Math.min(100, Math.round((effectivePaid / owed) * 100))) : 100;
 
         const submitAdj = () => {
@@ -590,8 +590,8 @@
                 <button type="button" className="meals-toggle" onClick={() => setAdjOpen((o) => !o)}>
                   🧾 Điều chỉnh {adjOpen ? "▴" : "▾"}
                 </button>
-                <b style={{ fontFamily: '"JetBrains Mono", monospace', color: adjustment >= 0 ? "#1d8f84" : "#d9483a" }}>
-                  {adjustment >= 0 ? "+" : "−"}{fmt(Math.abs(adjustment))}
+                <b style={{ fontFamily: '"JetBrains Mono", monospace', color: activeAdjustment >= 0 ? "#1d8f84" : "#d9483a" }}>
+                  {activeAdjustment >= 0 ? "+" : "−"}{fmt(Math.abs(activeAdjustment))}
                 </b>
               </div>
             )}
@@ -823,7 +823,7 @@
         const perPerson = useMemo(() => {
           const map = {};
           const ensure = (name) => {
-            if (!map[name]) map[name] = { name, owed: 0, paid: 0, mealsCount: 0, meals: [], advanced: 0, adjustment: 0, adjustments: [] };
+            if (!map[name]) map[name] = { name, owed: 0, paid: 0, mealsCount: 0, meals: [], advanced: 0, adjustment: 0, activeAdjustment: 0, adjustments: [] };
             return map[name];
           };
           visibleMeals.forEach((m) => {
@@ -841,6 +841,7 @@
           visibleAdjustments.forEach((a) => {
             const rec = ensure(a.name);
             rec.adjustment += a.amount;
+            if (!a.paid) rec.activeAdjustment += a.amount;
             rec.adjustments.push(a);
           });
           Object.values(map).forEach((p) => {
@@ -852,12 +853,12 @@
 
         const topSpenderName = perPerson.length ? perPerson[0].name : null;
         const topDebtor = useMemo(() => {
-          const withDebt = perPerson.map((p) => ({ ...p, unpaid: p.owed - p.paid - p.adjustment })).filter((p) => p.unpaid > 0).sort((a, b) => b.unpaid - a.unpaid);
+          const withDebt = perPerson.map((p) => ({ ...p, unpaid: p.owed - p.paid - p.activeAdjustment })).filter((p) => p.unpaid > 0).sort((a, b) => b.unpaid - a.unpaid);
           return withDebt.length ? withDebt[0].name : null;
         }, [perPerson]);
 
         const grandTotal = useMemo(() => visibleMeals.reduce((s, m) => s + m.amount, 0), [visibleMeals]);
-        const totalUnpaid = useMemo(() => perPerson.reduce((s, p) => s + (p.owed - p.paid - p.adjustment), 0), [perPerson]);
+        const totalUnpaid = useMemo(() => perPerson.reduce((s, p) => s + (p.owed - p.paid - p.activeAdjustment), 0), [perPerson]);
         const allSettled = visibleMeals.length > 0 && totalUnpaid === 0;
 
         const chartData = useMemo(() => {
@@ -946,6 +947,7 @@
                             meals={p.meals}
                             advanced={p.advanced}
                             adjustment={p.adjustment}
+                            activeAdjustment={p.activeAdjustment}
                             adjustments={p.adjustments}
                             onAddAdjustment={(amount, note) => addAdjustment(p.name, amount, note)}
                             onDeleteAdjustment={(id) => deleteAdjustment(id)}
