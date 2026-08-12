@@ -162,6 +162,7 @@
       .adj-add-btn:hover { border-color: var(--coral); color: var(--coral); }
       .adj-form { margin-top: 12px; background: #fdf6ea; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
       .sign-toggle { display: flex; gap: 6px; }
+      .adj-form-hint { font-size: 11.5px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
       .sign-btn { flex: 1; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; padding: 7px; font-weight: 700; cursor: pointer; font-size: 13px; color: var(--muted); font-family: "Inter", sans-serif; }
       .sign-btn.active-plus { background: #e6f7f5; border-color: var(--teal); color: #1d8f84; }
       .sign-btn.active-minus { background: #ffece9; border-color: var(--coral); color: #b8482f; }
@@ -608,7 +609,7 @@
                     >
                       {a.paid ? "✓" : ""}
                     </button>
-                    <span className="adj-note" title={a.note}>{a.note || (a.amount >= 0 ? "Cộng thêm" : "Trừ bớt")}</span>
+                    <span className="adj-note" title={a.note}>{a.note || (a.amount >= 0 ? "Giảm nợ" : "Tăng nợ")}</span>
                     {a.paid && <span className="adj-paid-tag">Đã trả</span>}
                     <span className={`adj-amount ${a.amount >= 0 ? "pos" : "neg"}`}>
                       {a.amount >= 0 ? "+" : "−"}{fmt(Math.abs(a.amount))}
@@ -622,8 +623,13 @@
             {adding ? (
               <div className="adj-form">
                 <div className="sign-toggle">
-                  <button type="button" className={`sign-btn ${sign === "+" ? "active-plus" : ""}`} onClick={() => setSign("+")}>+ Cộng thêm</button>
-                  <button type="button" className={`sign-btn ${sign === "-" ? "active-minus" : ""}`} onClick={() => setSign("-")}>− Trừ bớt</button>
+                  <button type="button" className={`sign-btn ${sign === "+" ? "active-plus" : ""}`} onClick={() => setSign("+")}>+ Giảm nợ</button>
+                  <button type="button" className={`sign-btn ${sign === "-" ? "active-minus" : ""}`} onClick={() => setSign("-")}>− Tăng nợ</button>
+                </div>
+                <div className="adj-form-hint">
+                  {sign === "+"
+                    ? "Dùng khi họ đã trả bạn riêng, hoặc bạn nợ họ khoản khác → nợ của họ giảm."
+                    : "Dùng khi phát sinh thêm chi phí họ phải trả → nợ của họ tăng."}
                 </div>
                 <input
                   className="input"
