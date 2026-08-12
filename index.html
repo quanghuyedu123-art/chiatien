@@ -145,7 +145,11 @@
       .mb-check { flex-shrink: 0; }
       .mb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
       .mb-amount { flex-shrink: 0; font-family: "JetBrains Mono", monospace; color: var(--muted); font-size: 11.5px; }
-      .person-stat-total { font-family: "JetBrains Mono", monospace; font-size: 21px; font-weight: 700; margin-bottom: 10px; }
+      .person-stat-total-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+      .person-stat-total { font-family: "JetBrains Mono", monospace; font-size: 21px; font-weight: 700; margin-bottom: 2px; }
+      .person-stat-gross { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+      .person-stat-gross b { font-family: "JetBrains Mono", monospace; color: var(--muted); font-weight: 600; }
+      .settled-mini-flag { display: inline-flex; align-items: center; gap: 4px; background: rgba(46, 196, 182, 0.15); color: #1d8f84; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; margin-bottom: 10px; }
       .mini-progress-track { height: 6px; border-radius: 4px; background: #f0e4d0; overflow: hidden; margin-bottom: 12px; }
       .mini-progress-fill { height: 100%; border-radius: 4px; }
       .person-stat-row { display: flex; justify-content: space-between; font-size: 12.5px; margin-top: 4px; color: var(--muted); }
@@ -165,10 +169,16 @@
       .adj-form-actions .btn { padding: 7px 14px; font-size: 13px; }
       .adj-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
       .adj-row { display: flex; align-items: center; gap: 8px; font-size: 12px; background: #fdf6ea; border-radius: 8px; padding: 6px 8px; }
+      .adj-row.is-paid { background: #f1f7ee; opacity: 0.7; }
+      .adj-paid-btn { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border); background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0; flex-shrink: 0; font-size: 11px; font-weight: 700; }
+      .adj-paid-btn.checked { background: var(--teal); border-color: var(--teal); }
       .adj-note { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+      .adj-row.is-paid .adj-note { text-decoration: line-through; color: var(--muted); }
       .adj-amount { font-family: "JetBrains Mono", monospace; font-weight: 700; flex-shrink: 0; font-size: 12px; }
       .adj-amount.pos { color: #1d8f84; }
       .adj-amount.neg { color: #d9483a; }
+      .adj-row.is-paid .adj-amount.pos, .adj-row.is-paid .adj-amount.neg { color: var(--muted); }
+      .adj-paid-tag { font-size: 10px; font-weight: 700; color: #1d8f84; flex-shrink: 0; }
       .adj-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; flex-shrink: 0; padding: 0; }
       .adj-del:hover { color: #d9483a; }
       .adj-toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; margin-top: 4px; color: var(--muted); }
@@ -513,7 +523,7 @@
       }
 
       // ---------- PersonStatCard ----------
-      function PersonStatCard({ name, owed, paid, mealsCount, badge, meals, advanced, adjustment, adjustments, onAddAdjustment, onDeleteAdjustment }) {
+      function PersonStatCard({ name, owed, paid, mealsCount, badge, meals, advanced, adjustment, adjustments, onAddAdjustment, onDeleteAdjustment, onToggleAdjustmentPaid }) {
         const [open, setOpen] = useState(false);
         const [adjOpen, setAdjOpen] = useState(adjustments.length > 0);
         const [adding, setAdding] = useState(false);
@@ -560,7 +570,13 @@
               </div>
             )}
 
-            <div className="person-stat-total">{fmt(owed)}</div>
+            <div className="person-stat-total-label">⏳ Còn nợ</div>
+            {unpaid <= 0 ? (
+              <div className="settled-mini-flag">✅ Đã thanh toán</div>
+            ) : (
+              <div className="person-stat-total" style={{ color: "#FF6B57" }}>{fmt(unpaid)}</div>
+            )}
+            <div className="person-stat-gross">Tổng nợ gốc: <b>{fmt(owed)}</b></div>
             <div className="mini-progress-track">
               <div className="mini-progress-fill" style={{ width: `${pct}%`, background: colorForName(name) }} />
             </div>
@@ -583,8 +599,17 @@
             {adjOpen && adjustments.length > 0 && (
               <div className="adj-list">
                 {adjustments.map((a) => (
-                  <div className="adj-row" key={a.id}>
+                  <div className={`adj-row ${a.paid ? "is-paid" : ""}`} key={a.id}>
+                    <button
+                      type="button"
+                      className={`adj-paid-btn ${a.paid ? "checked" : ""}`}
+                      onClick={() => onToggleAdjustmentPaid(a.id)}
+                      title={a.paid ? "Bỏ đánh dấu đã thanh toán" : "Đánh dấu đã thanh toán"}
+                    >
+                      {a.paid ? "✓" : ""}
+                    </button>
                     <span className="adj-note" title={a.note}>{a.note || (a.amount >= 0 ? "Cộng thêm" : "Trừ bớt")}</span>
+                    {a.paid && <span className="adj-paid-tag">Đã trả</span>}
                     <span className={`adj-amount ${a.amount >= 0 ? "pos" : "neg"}`}>
                       {a.amount >= 0 ? "+" : "−"}{fmt(Math.abs(a.amount))}
                     </span>
@@ -593,8 +618,6 @@
                 ))}
               </div>
             )}
-
-            <div className="person-stat-row"><span>⏳ Còn nợ</span><b style={{ color: unpaid > 0 ? "#FF6B57" : "#2EC4B6" }}>{fmt(unpaid)}</b></div>
 
             {adding ? (
               <div className="adj-form">
@@ -731,12 +754,17 @@
           syncMeals(next);
         };
         const addAdjustment = (name, amount, note) => {
-          const next = [{ id: uid(), name, amount, note, date: new Date().toISOString().slice(0, 10) }, ...adjustments];
+          const next = [{ id: uid(), name, amount, note, paid: false, date: new Date().toISOString().slice(0, 10) }, ...adjustments];
           setAdjustments(next);
           syncAdjustments(next);
         };
         const deleteAdjustment = (id) => {
           const next = adjustments.filter((x) => x.id !== id);
+          setAdjustments(next);
+          syncAdjustments(next);
+        };
+        const toggleAdjustmentPaid = (id) => {
+          const next = adjustments.map((x) => (x.id === id ? { ...x, paid: !x.paid } : x));
           setAdjustments(next);
           syncAdjustments(next);
         };
@@ -921,6 +949,7 @@
                             adjustments={p.adjustments}
                             onAddAdjustment={(amount, note) => addAdjustment(p.name, amount, note)}
                             onDeleteAdjustment={(id) => deleteAdjustment(id)}
+                            onToggleAdjustmentPaid={(id) => toggleAdjustmentPaid(id)}
                             badge={p.name === topSpenderName ? "🏆 Chi nhiều nhất" : p.name === topDebtor ? "🐢 Nợ dai nhất" : null}
                           />
                         ))}
