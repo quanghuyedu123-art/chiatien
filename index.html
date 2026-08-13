@@ -80,7 +80,7 @@
         .section-head .select-month { width: 100%; }
         .select-month { width: 100%; }
         .summary-banner { padding: 16px 18px; gap: 18px; }
-        .stats-summary-line { flex-direction: column; align-items: flex-start; gap: 2px; }
+        .stats-summary-line { gap: 4px 8px; }
       }
       .label { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; margin-bottom: 5px; letter-spacing: 0.3px; }
       .input {
@@ -100,6 +100,21 @@
       .chip { display: inline-flex; align-items: center; gap: 7px; background: #f4efe2; border-radius: 999px; padding: 4px 8px 4px 6px; font-size: 13px; font-weight: 500; }
       .chip button { background: none; border: none; color: var(--muted); cursor: pointer; display: flex; padding: 0; font-size: 14px; }
       .chip button:hover { color: var(--coral); }
+      .payer-pill {
+        display: inline-flex; align-items: center; gap: 7px; background: #fff; border: 1.5px solid var(--border);
+        border-radius: 999px; padding: 5px 12px 5px 6px; font-size: 13px; font-weight: 500; cursor: pointer;
+        font-family: "Inter", sans-serif; color: var(--ink);
+      }
+      .payer-pill:hover { border-color: var(--coral); }
+      .payer-pill-active { background: #fff3ea; border-color: var(--coral); color: #b8482f; font-weight: 700; }
+      .payer-badge {
+        font-size: 10px; font-weight: 700; color: #1d8f84; background: rgba(46, 196, 182, 0.15);
+        padding: 2px 7px; border-radius: 999px; white-space: nowrap;
+      }
+      .custom-share-badge {
+        font-size: 10px; font-weight: 700; color: #b8482f; background: rgba(255, 107, 87, 0.15);
+        padding: 2px 7px; border-radius: 999px; white-space: nowrap;
+      }
       .hint-money { margin-top: 10px; font-size: 13.5px; background: #fff3ea; border-radius: 10px; padding: 8px 12px; color: #7a4a2f; }
       .hint-money b { font-family: "JetBrains Mono", monospace; color: var(--coral); }
       .error-text { color: #d9483a; font-size: 13px; margin-top: 10px; font-weight: 500; }
@@ -125,6 +140,13 @@
       .progress-fill { height: 100%; background: linear-gradient(90deg, var(--teal), #4fd8ca); border-radius: 6px; transition: width 0.25s; }
       .progress-label { font-size: 11.5px; color: var(--muted); margin-top: 6px; font-weight: 600; }
       .people-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+      .hide-paid-row { display: flex; align-items: center; justify-content: flex-end; margin-top: 10px; }
+      .hide-paid-btn {
+        background: none; border: none; padding: 0; cursor: pointer; font-size: 11.5px; color: var(--muted);
+        font-family: "Inter", sans-serif; font-weight: 600;
+      }
+      .hide-paid-btn:hover { color: var(--coral); }
+      .all-hidden-note { text-align: center; font-size: 12px; color: var(--muted); padding: 10px 0 2px; }
       .person-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 10px; cursor: pointer; transition: background 0.15s; }
       .person-row:hover { background: #fdf6ea; }
       .person-row.paid { opacity: 0.65; }
@@ -188,6 +210,15 @@
       .adj-amount.neg { color: #d9483a; }
       .adj-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; flex-shrink: 0; padding: 0; }
       .adj-del:hover { color: #d9483a; }
+      .settle-card { padding: 20px; margin-top: 22px; }
+      .settle-list { margin-top: 6px; display: flex; flex-direction: column; gap: 8px; }
+      .settle-row {
+        display: flex; align-items: center; gap: 10px; background: #fdf6ea; border-radius: 12px;
+        padding: 10px 12px; font-size: 13.5px; flex-wrap: wrap;
+      }
+      .settle-names { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 160px; font-weight: 600; }
+      .settle-arrow { color: var(--coral); font-weight: 700; }
+      .settle-amount { font-family: "JetBrains Mono", monospace; font-weight: 700; color: var(--coral); font-size: 14px; }
       .batch-hint { font-size: 12.5px; color: var(--muted); margin: -6px 0 14px; }
       .batch-items { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
       .batch-item-row { display: flex; justify-content: space-between; font-size: 12.5px; background: #fdf6ea; border-radius: 8px; padding: 6px 8px; }
@@ -209,9 +240,10 @@
       .meal-form-editing { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(46, 196, 182, 0.18); }
       .stats-summary-line {
         font-size: 13px; color: var(--muted); margin: -8px 0 14px; background: #fdf6ea;
-        border-radius: 10px; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center;
+        border-radius: 10px; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center;
       }
       .stats-summary-line b { font-family: "JetBrains Mono", monospace; color: var(--ink); font-weight: 700; }
+      .stat-chunk { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
       .attach-toggle {
         display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12px; color: var(--muted);
         cursor: pointer; user-select: none;
@@ -263,6 +295,30 @@
       // Chuẩn hoá tên để so sánh (bỏ khoảng trắng thừa, không phân biệt hoa/thường)
       const normName = (name) => String(name || "").trim().toLowerCase();
       const EPS = 1; // sai số làm tròn cho phép (đồng), tránh lỗi số thực kiểu 99999.999999
+      // Làm tròn phần tiền mỗi người trả LÊN bội số của 1,000đ, để không bao giờ có số lẻ khó chuyển khoản.
+      // VD: 3,222 -> 4,000 · 5,111 -> 6,000 · 5,000 -> 5,000 (đã tròn thì giữ nguyên).
+      const roundShare = (n) => Math.ceil((n || 0) / 1000) * 1000;
+      // Chia tiền không đều: những người có "override" (số tiền tự đặt) giữ nguyên số đó;
+      // phần còn lại của hoá đơn được chia đều (và làm tròn lên) cho những người chưa đặt riêng.
+      // names: mảng tên người tham gia. overridesMap: { [tên]: số tiền cố định | undefined }.
+      const splitShares = (amount, names, overridesMap) => {
+        const map = overridesMap || {};
+        const customNames = names.filter((n) => map[n] != null && map[n] >= 0);
+        const restNames = names.filter((n) => !(map[n] != null && map[n] >= 0));
+        const customTotal = customNames.reduce((s, n) => s + map[n], 0);
+        const remaining = Math.max(0, (amount || 0) - customTotal);
+        const restShare = restNames.length ? roundShare(remaining / restNames.length) : 0;
+        const result = {};
+        names.forEach((n) => { result[n] = (map[n] != null && map[n] >= 0) ? map[n] : restShare; });
+        return result;
+      };
+      // Giống splitShares nhưng đọc trực tiếp từ 1 bữa ăn (meal.people[i].shareOverride).
+      const computeShares = (meal) => {
+        if (!meal || !meal.people || !meal.people.length) return {};
+        const overridesMap = {};
+        meal.people.forEach((p) => { if (p.shareOverride != null) overridesMap[p.name] = p.shareOverride; });
+        return splitShares(meal.amount, meal.people.map((p) => p.name), overridesMap);
+      };
 
       // Ảnh đính kèm khi tải biên nhận (vd: QR nhận tiền / lì xì).
       // Đây là ảnh do người dùng cung cấp, được nhúng sẵn (base64) để không cần tải lại mỗi lần.
@@ -338,6 +394,48 @@
         );
       }
 
+      // ---------- SplitRow: dòng chỉnh số tiền riêng cho 1 người khi chia không đều ----------
+      function SplitRow({ name, amount, isCustom, onChange, onReset }) {
+        const [editing, setEditing] = useState(false);
+        const [val, setVal] = useState("");
+        const startEdit = () => { setVal(formatTyping(String(Math.round(amount)))); setEditing(true); };
+        const confirm = () => { onChange(parseTyping(val)); setEditing(false); };
+        const cancel = () => setEditing(false);
+
+        return (
+          <div className="person-row">
+            <span className="person-left">
+              <Avatar name={name} size={24} />
+              <span>{name}</span>
+              {isCustom && <span className="custom-share-badge">⚖️ Riêng</span>}
+            </span>
+            {editing ? (
+              <span className="person-right">
+                <input
+                  className="input amount-input"
+                  inputMode="numeric"
+                  autoFocus
+                  placeholder="0"
+                  value={val}
+                  onChange={(e) => setVal(formatTyping(e.target.value))}
+                  onKeyDown={(e) => { if (e.key === "Enter") confirm(); if (e.key === "Escape") cancel(); }}
+                />
+                <button type="button" className="amount-edit-btn" onClick={confirm} title="Lưu">✅</button>
+                <button type="button" className="amount-edit-btn" onClick={cancel} title="Huỷ">✖️</button>
+              </span>
+            ) : (
+              <span className="person-right">
+                <span className="person-amount">{fmt(amount)}</span>
+                <button type="button" className="amount-edit-btn" onClick={startEdit} title="Sửa số tiền người này phải trả">✎</button>
+                {isCustom && (
+                  <button type="button" className="amount-edit-btn" onClick={onReset} title="Bỏ tuỳ chỉnh, chia đều lại">↺</button>
+                )}
+              </span>
+            )}
+          </div>
+        );
+      }
+
       // ---------- MealForm ----------
       function MealForm({ onAdd, onUpdate, onCancelEdit, knownPeople, editingMeal }) {
         const isEditing = !!editingMeal;
@@ -348,6 +446,12 @@
         );
         const [people, setPeople] = useState(() => editingMeal ? editingMeal.people.map((p) => p.name) : []);
         const [personInput, setPersonInput] = useState("");
+        const [payer, setPayer] = useState(() => editingMeal?.payer || "");
+        const [overrides, setOverrides] = useState(() => {
+          const o = {};
+          (editingMeal?.people || []).forEach((p) => { if (p.shareOverride != null) o[p.name] = p.shareOverride; });
+          return o;
+        });
         const [error, setError] = useState("");
         const amount = parseTyping(amountDisplay);
 
@@ -358,8 +462,30 @@
           setDate(editingMeal.date);
           setAmountDisplay(formatTyping(String(Math.round(editingMeal.amount))));
           setPeople(editingMeal.people.map((p) => p.name));
+          setPayer(editingMeal.payer || "");
+          const o = {};
+          editingMeal.people.forEach((p) => { if (p.shareOverride != null) o[p.name] = p.shareOverride; });
+          setOverrides(o);
           setError("");
         }, [editingMeal?.id]);
+
+        // Nếu người đang được chọn làm "người ứng tiền" bị xoá khỏi danh sách tham gia thì bỏ chọn.
+        // Không tự ý chọn ai khác — người dùng có thể để trống nếu muốn.
+        useEffect(() => {
+          if (payer && !people.includes(payer)) setPayer("");
+          // Xoá luôn phần tuỳ chỉnh chia tiền của người đã bị bỏ khỏi danh sách.
+          setOverrides((o) => {
+            const keys = Object.keys(o);
+            if (keys.every((k) => people.includes(k))) return o;
+            const next = {};
+            keys.forEach((k) => { if (people.includes(k)) next[k] = o[k]; });
+            return next;
+          });
+          // eslint-disable-next-line
+        }, [people]);
+
+        const formShares = useMemo(() => splitShares(amount, people, overrides), [amount, people, overrides]);
+        const hasOverrides = Object.keys(overrides).length > 0;
 
         const addPerson = (val) => {
           const raw = (val ?? personInput).trim();
@@ -382,7 +508,6 @@
           if (!name.trim()) return setError("Chưa nhập tên bữa ăn 🍽️");
           if (!amount || amount <= 0) return setError("Số tiền phải lớn hơn 0 💰");
           if (people.length === 0) return setError("Cần ít nhất 1 người tham gia 🙋");
-          const share = amount / people.length;
 
           if (isEditing) {
             // Giữ lại số tiền đã trả (paidAmount) của những người vẫn còn tham gia bữa này;
@@ -394,11 +519,13 @@
               name: name.trim(),
               date,
               amount,
+              payer: payer || "",
               people: people.map((p) => {
                 const key = normName(p);
                 const prevPaid = oldByKey[key];
+                const share = formShares[p];
                 const paidAmount = prevPaid != null ? Math.min(prevPaid, share) : 0;
-                return { name: p, paidAmount };
+                return { name: p, paidAmount, shareOverride: overrides[p] != null ? overrides[p] : null };
               }),
             });
             return;
@@ -409,9 +536,10 @@
             name: name.trim(),
             date,
             amount,
-            people: people.map((p) => ({ name: p, paidAmount: 0 })),
+            payer: payer || "",
+            people: people.map((p) => ({ name: p, paidAmount: 0, shareOverride: overrides[p] != null ? overrides[p] : null })),
           });
-          setName(""); setAmountDisplay(""); setPeople([]); setPersonInput("");
+          setName(""); setAmountDisplay(""); setPeople([]); setPersonInput(""); setPayer(""); setOverrides({});
         };
 
         const suggestions = knownPeople.filter(
@@ -471,9 +599,57 @@
               )}
 
               {amount > 0 && people.length > 0 && (
-                <div className="hint-money">🙂 Mỗi người trả <b>{fmt(amount / people.length)}</b></div>
+                <div style={{ marginTop: 12 }}>
+                  <div className="section-head" style={{ margin: "0 0 8px" }}>
+                    <label className="label" style={{ marginBottom: 0 }}>💰 Số tiền mỗi người phải trả</label>
+                    {hasOverrides && (
+                      <button type="button" className="hide-paid-btn" onClick={() => setOverrides({})}>↺ Chia đều lại tất cả</button>
+                    )}
+                  </div>
+                  <div className="people-list">
+                    {people.map((p) => (
+                      <SplitRow
+                        key={p}
+                        name={p}
+                        amount={formShares[p]}
+                        isCustom={overrides[p] != null}
+                        onChange={(val) => setOverrides((o) => ({ ...o, [p]: Math.max(0, val) }))}
+                        onReset={() => setOverrides((o) => { const n = { ...o }; delete n[p]; return n; })}
+                      />
+                    ))}
+                  </div>
+                  {!hasOverrides ? (
+                    <div className="hint-money">🙂 Đang chia đều — mỗi người trả <b>{fmt(formShares[people[0]])}</b></div>
+                  ) : (
+                    <div className="adj-form-hint">
+                      💡 Bấm ✎ cạnh tên để chỉnh riêng số tiền của người đó — phần còn lại của hoá đơn sẽ tự chia đều cho những người chưa chỉnh.
+                    </div>
+                  )}
+                </div>
               )}
             </div>
+
+            {people.length > 0 && (
+              <div style={{ marginTop: 14 }}>
+                <label className="label">💳 Ai đã ứng tiền trả trước? (không bắt buộc)</label>
+                <div className="chip-row">
+                  {people.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      className={`payer-pill ${payer === p ? "payer-pill-active" : ""}`}
+                      onClick={() => setPayer(payer === p ? "" : p)}
+                    >
+                      <Avatar name={p} size={20} />
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                {!payer && (
+                  <div className="adj-form-hint">Chưa chọn ai — bữa này sẽ không được tính vào phần "Chia tiền thông minh" bên dưới.</div>
+                )}
+              </div>
+            )}
 
             {error && <div className="error-text">{error}</div>}
             <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
@@ -489,26 +665,32 @@
       }
 
       // ---------- PersonRow (hỗ trợ trả một phần) ----------
-      function PersonRow({ person, share, onToggleFull, onSetAmount }) {
-        const [editing, setEditing] = useState(false);
+      function PersonRow({ person, share, isPayer, isCustomShare, onToggleFull, onSetAmount, onSetShare }) {
+        const [mode, setMode] = useState(null); // null | "paid" | "share"
         const [val, setVal] = useState("");
         const paidAmount = Math.max(0, person.paidAmount || 0);
         const fullyPaid = paidAmount >= share - 0.5;
         const partial = paidAmount > 0 && !fullyPaid;
 
-        const startEdit = (e) => {
+        const startEditPaid = (e) => {
           e.stopPropagation();
           setVal(formatTyping(String(Math.round(paidAmount))));
-          setEditing(true);
+          setMode("paid");
+        };
+        const startEditShare = (e) => {
+          e.stopPropagation();
+          setVal(formatTyping(String(Math.round(share))));
+          setMode("share");
         };
         const confirm = (e) => {
           e.stopPropagation();
-          onSetAmount(parseTyping(val));
-          setEditing(false);
+          if (mode === "paid") onSetAmount(parseTyping(val));
+          else if (mode === "share") onSetShare(parseTyping(val));
+          setMode(null);
         };
         const cancel = (e) => {
           e.stopPropagation();
-          setEditing(false);
+          setMode(null);
         };
 
         return (
@@ -516,9 +698,11 @@
             <span className="person-left">
               <Avatar name={person.name} size={26} />
               <span>{person.name}</span>
+              {isPayer && <span className="payer-badge" title="Người đã ứng tiền trả trước cho bữa này">💳 Đã ứng</span>}
+              {isCustomShare && <span className="custom-share-badge" title="Số tiền phải trả của người này đã được chỉnh riêng">⚖️ Riêng</span>}
             </span>
 
-            {editing ? (
+            {mode ? (
               <span className="person-right">
                 <input
                   className="input amount-input"
@@ -541,7 +725,11 @@
                 <span className="person-amount">
                   {partial ? `${fmt(paidAmount)} / ${fmt(share)}` : fmt(share)}
                 </span>
-                <button type="button" className="amount-edit-btn" onClick={startEdit} title="Nhập số tiền đã trả">✎</button>
+                <button type="button" className="amount-edit-btn" onClick={startEditShare} title="Sửa số tiền người này phải trả (chia không đều)">⚖️</button>
+                <button type="button" className="amount-edit-btn" onClick={startEditPaid} title="Nhập số tiền đã trả">✎</button>
+                {isCustomShare && (
+                  <button type="button" className="amount-edit-btn" onClick={(e) => { e.stopPropagation(); onSetShare(null); }} title="Bỏ tuỳ chỉnh, chia đều lại">↺</button>
+                )}
                 <button
                   type="button"
                   className={`check-btn ${fullyPaid ? "checked" : partial ? "partial" : ""}`}
@@ -558,12 +746,15 @@
       }
 
       // ---------- MealCard ----------
-      function MealCard({ meal, onTogglePaid, onSetAmount, onDelete, onEdit, selected, onToggleSelect }) {
-        const share = meal.amount / meal.people.length;
+      function MealCard({ meal, onTogglePaid, onSetAmount, onSetShare, onDelete, onEdit, selected, onToggleSelect }) {
+        const [hidePaid, setHidePaid] = useState(false);
+        const shares = computeShares(meal);
         const totalPaid = meal.people.reduce((s, p) => s + Math.max(0, p.paidAmount || 0), 0);
-        const paidCount = meal.people.filter((p) => (p.paidAmount || 0) >= share - 0.5).length;
+        const isFullyPaid = (p) => (p.paidAmount || 0) >= shares[p.name] - 0.5;
+        const paidCount = meal.people.filter(isFullyPaid).length;
         const allPaid = paidCount === meal.people.length;
         const progressPct = meal.amount > 0 ? Math.min(100, (totalPaid / meal.amount) * 100) : 0;
+        const visiblePeople = hidePaid ? meal.people.filter((p) => !isFullyPaid(p)) : meal.people;
 
         return (
           <div className={`card meal-card ${selected ? "meal-card-selected" : ""}`}>
@@ -579,7 +770,7 @@
                 </button>
                 <div>
                   <div className="meal-name">{meal.name}</div>
-                  <div className="meal-meta">{shortDate(meal.date)} · {meal.people.length} người · {fmt(share)}/người</div>
+                  <div className="meal-meta">{shortDate(meal.date)}</div>
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -600,16 +791,30 @@
                 : `${fmt(totalPaid)}/${fmt(meal.amount)} đã thu · ${paidCount}/${meal.people.length} người trả đủ`}
             </div>
 
+            {paidCount > 0 && (
+              <div className="hide-paid-row">
+                <button type="button" className="hide-paid-btn" onClick={() => setHidePaid((v) => !v)}>
+                  {hidePaid ? "👀 Hiện tất cả" : `🙈 Ẩn ${paidCount} người đã trả`}
+                </button>
+              </div>
+            )}
+
             <div className="people-list">
-              {meal.people.map((p) => (
+              {visiblePeople.map((p) => (
                 <PersonRow
                   key={p.name}
                   person={p}
-                  share={share}
+                  share={shares[p.name]}
+                  isPayer={!!meal.payer && normName(p.name) === normName(meal.payer)}
+                  isCustomShare={p.shareOverride != null}
                   onToggleFull={() => onTogglePaid(meal.id, p.name)}
                   onSetAmount={(amt) => onSetAmount(meal.id, p.name, amt)}
+                  onSetShare={(amt) => onSetShare(meal.id, p.name, amt)}
                 />
               ))}
+              {hidePaid && visiblePeople.length === 0 && (
+                <div className="all-hidden-note">🎉 Mọi người đã trả đủ (đang ẩn) · bấm "Hiện tất cả" để xem lại</div>
+              )}
             </div>
           </div>
         );
@@ -881,12 +1086,13 @@
             const parsed = raw ? JSON.parse(raw) : [];
             // Chuyển dữ liệu cũ (paid: true/false) sang paidAmount để hỗ trợ trả một phần
             return parsed.map((m) => {
-              const share = m.people.length ? m.amount / m.people.length : 0;
+              const share = m.people.length ? roundShare(m.amount / m.people.length) : 0;
               return {
                 ...m,
                 people: m.people.map((p) => ({
                   name: p.name,
                   paidAmount: p.paidAmount != null ? p.paidAmount : p.paid ? share : 0,
+                  shareOverride: p.shareOverride != null ? p.shareOverride : null,
                 })),
               };
             });
@@ -987,11 +1193,12 @@
         const togglePaid = (mealId, personName) => {
           const next = meals.map((meal) => {
             if (meal.id !== mealId) return meal;
-            const share = meal.amount / meal.people.length;
+            const shares = computeShares(meal);
             return {
               ...meal,
               people: meal.people.map((p) => {
                 if (p.name !== personName) return p;
+                const share = shares[p.name];
                 const isFull = (p.paidAmount || 0) >= share - 0.5;
                 return { ...p, paidAmount: isFull ? 0 : share };
               }),
@@ -1002,12 +1209,30 @@
         const setPersonAmount = (mealId, personName, amount) => {
           const next = meals.map((meal) => {
             if (meal.id !== mealId) return meal;
-            const share = meal.amount / meal.people.length;
+            const shares = computeShares(meal);
+            const share = shares[personName] || 0;
             const clamped = Math.max(0, Math.min(amount, share));
             return {
               ...meal,
               people: meal.people.map((p) => (p.name === personName ? { ...p, paidAmount: clamped } : p)),
             };
+          });
+          setMeals(next);
+        };
+        // amount === null -> bỏ tuỳ chỉnh, chia đều lại phần còn lại cho người này.
+        const setShareOverride = (mealId, personName, amount) => {
+          const next = meals.map((meal) => {
+            if (meal.id !== mealId) return meal;
+            const people = meal.people.map((p) =>
+              p.name === personName ? { ...p, shareOverride: amount == null ? null : Math.max(0, amount) } : p
+            );
+            // Sau khi đổi mức chia, số tiền đã trả không được vượt quá mức phải trả mới.
+            const shares = computeShares({ ...meal, people });
+            const clampedPeople = people.map((p) => ({
+              ...p,
+              paidAmount: Math.min(Math.max(0, p.paidAmount || 0), shares[p.name] || 0),
+            }));
+            return { ...meal, people: clampedPeople };
           });
           setMeals(next);
         };
@@ -1037,6 +1262,19 @@
         );
         const sortedMeals = useMemo(() => [...visibleMeals].sort((a, b) => (a.date < b.date ? 1 : -1)), [visibleMeals]);
 
+        // Một bữa được coi là "đã xong" khi mọi người tham gia đã trả đủ phần của mình.
+        const isMealSettled = (m) => {
+          if (!m.people.length) return false;
+          const shares = computeShares(m);
+          return m.people.every((p) => (p.paidAmount || 0) >= shares[p.name] - 0.5);
+        };
+        const [hideSettledMeals, setHideSettledMeals] = useState(false);
+        const settledMealsCount = useMemo(() => sortedMeals.filter(isMealSettled).length, [sortedMeals]);
+        const displayedMeals = useMemo(
+          () => (hideSettledMeals ? sortedMeals.filter((m) => !isMealSettled(m)) : sortedMeals),
+          [sortedMeals, hideSettledMeals]
+        );
+
         const perPerson = useMemo(() => {
           const map = {};
           const ensure = (name) => {
@@ -1045,9 +1283,10 @@
             return map[key];
           };
           visibleMeals.forEach((m) => {
-            const share = m.amount / m.people.length;
+            const shares = computeShares(m);
             m.people.forEach((p) => {
               const rec = ensure(p.name);
+              const share = shares[p.name];
               const paidAmount = Math.max(0, p.paidAmount || 0);
               rec.owed += share;
               rec.mealsCount += 1;
@@ -1076,6 +1315,53 @@
         );
         const allSettled = visibleMeals.length > 0 && totalUnpaid < EPS;
 
+        // ---------- Chia tiền thông minh: gộp nợ qua lại, tối ưu số lượt chuyển khoản ----------
+        // Với mỗi bữa, người "đã ứng tiền" (payer) được coi là đã tạm ứng cho cả nhóm.
+        // Ai chưa trả phần của mình (share - paidAmount) thì đang nợ payer khoản đó.
+        // Gộp hết các khoản nợ chéo giữa mọi người lại rồi áp thuật toán tham lam
+        // (khớp người nợ nhiều nhất với người được nợ nhiều nhất) để giảm tối đa số giao dịch cần thực hiện.
+        const settlement = useMemo(() => {
+          const balance = {}; // dương = được nhận thêm tiền, âm = còn nợ
+          const addBalance = (name, delta) => {
+            if (!name) return;
+            balance[name] = (balance[name] || 0) + delta;
+          };
+          visibleMeals.forEach((m) => {
+            if (!m.people.length || !m.payer) return; // chưa chọn ai ứng tiền -> bỏ qua bữa này
+            const shares = computeShares(m);
+            const payer = m.payer;
+            m.people.forEach((p) => {
+              if (normName(p.name) === normName(payer)) return;
+              const outstanding = Math.max(0, shares[p.name] - Math.max(0, p.paidAmount || 0));
+              if (outstanding < EPS) return;
+              addBalance(payer, outstanding);
+              addBalance(p.name, -outstanding);
+            });
+          });
+
+          let creditors = Object.entries(balance)
+            .filter(([, v]) => v > EPS)
+            .map(([name, v]) => ({ name, amount: v }));
+          let debtors = Object.entries(balance)
+            .filter(([, v]) => v < -EPS)
+            .map(([name, v]) => ({ name, amount: -v }));
+
+          const transactions = [];
+          while (creditors.length && debtors.length) {
+            creditors.sort((a, b) => b.amount - a.amount);
+            debtors.sort((a, b) => b.amount - a.amount);
+            const c = creditors[0];
+            const d = debtors[0];
+            const amt = Math.min(c.amount, d.amount);
+            transactions.push({ from: d.name, to: c.name, amount: amt });
+            c.amount -= amt;
+            d.amount -= amt;
+            creditors = creditors.filter((x) => x.amount > EPS);
+            debtors = debtors.filter((x) => x.amount > EPS);
+          }
+          return transactions;
+        }, [visibleMeals]);
+
         const batchData = useMemo(() => {
           if (selectedMealIds.length === 0) return [];
           const map = {};
@@ -1085,10 +1371,11 @@
             return map[key];
           };
           meals.forEach((m) => {
-            const share = m.amount / m.people.length;
+            const shares = computeShares(m);
             const isSelected = selectedMealIds.includes(m.id);
             m.people.forEach((p) => {
               const rec = ensure(p.name);
+              const share = shares[p.name];
               const paidAmount = Math.max(0, p.paidAmount || 0);
               if (isSelected) {
                 // Trừ phần đã tích thanh toán trước đó, chỉ tính số còn thiếu vào biên nhận
@@ -1166,16 +1453,27 @@
                   </div>
                   <div className="batch-hint">☑️ Tích chọn các bữa ăn bên dưới để gộp thành 1 đợt, xem biên nhận riêng cho từng người rồi chụp gửi.</div>
 
+                  {settledMealsCount > 0 && (
+                    <div className="hide-paid-row" style={{ marginTop: 0, marginBottom: 12 }}>
+                      <button type="button" className="hide-paid-btn" onClick={() => setHideSettledMeals((v) => !v)}>
+                        {hideSettledMeals ? `👀 Hiện ${settledMealsCount} bữa đã xong` : `🙈 Ẩn ${settledMealsCount} bữa đã xong`}
+                      </button>
+                    </div>
+                  )}
+
                   {sortedMeals.length === 0 ? (
                     <div className="empty-note">Không có bữa ăn nào trong tháng này.</div>
+                  ) : displayedMeals.length === 0 ? (
+                    <div className="empty-note">🎉 Tất cả bữa ăn đều đã xong (đang ẩn) · bấm "Hiện" ở trên để xem lại.</div>
                   ) : (
                     <div className="meal-grid">
-                      {sortedMeals.map((m) => (
+                      {displayedMeals.map((m) => (
                         <MealCard
                           key={m.id}
                           meal={m}
                           onTogglePaid={togglePaid}
                           onSetAmount={setPersonAmount}
+                          onSetShare={setShareOverride}
                           onDelete={deleteMeal}
                           onEdit={startEditMeal}
                           selected={selectedMealIds.includes(m.id)}
@@ -1230,9 +1528,10 @@
                         </select>
                       </div>
                       <div className="stats-summary-line">
-                        📅 {monthFilter === "all" ? "Tất cả các tháng" : monthLabel(monthFilter)} · 👥 {perPerson.length} người ·
-                        {" "}🍜 Tổng chi <b>{fmt(grandTotal)}</b> ·
-                        {" "}⏳ Còn thiếu <b style={{ color: totalUnpaid > 0 ? "#FF6B57" : "#2EC4B6" }}>{fmt(totalUnpaid)}</b>
+                        <span className="stat-chunk">📅 {monthFilter === "all" ? "Tất cả các tháng" : monthLabel(monthFilter)}</span>
+                        <span className="stat-chunk">👥 {perPerson.length} người</span>
+                        <span className="stat-chunk">🍜 Tổng chi <b>{fmt(grandTotal)}</b></span>
+                        <span className="stat-chunk">⏳ Còn thiếu <b style={{ color: totalUnpaid > 0 ? "#FF6B57" : "#2EC4B6" }}>{fmt(totalUnpaid)}</b></span>
                       </div>
                       <div className="stat-grid">
                         {perPerson.map((p) => (
@@ -1249,6 +1548,29 @@
                             onDeleteAdjustment={(id) => deleteAdjustment(id)}
                           />
                         ))}
+                      </div>
+
+                      <div className="card fun-shadow settle-card">
+                        <div className="card-title">🧠 Chia tiền thông minh</div>
+                        <div className="batch-hint" style={{ margin: "-8px 0 12px" }}>
+                          ℹ️ Gộp hết các khoản nợ qua lại (dựa trên "người đã ứng tiền" của mỗi bữa) để gợi ý cách chuyển khoản với <b>số lượt ít nhất có thể</b>, thay vì từng người trả riêng lẻ cho từng bữa. Bữa nào chưa chọn người ứng tiền sẽ không được tính ở đây.
+                        </div>
+                        {settlement.length === 0 ? (
+                          <div className="empty-note">🎉 Không còn ai nợ ai — mọi khoản đã cân bằng!</div>
+                        ) : (
+                          <div className="settle-list">
+                            {settlement.map((t, i) => (
+                              <div className="settle-row" key={i}>
+                                <span className="settle-names">
+                                  <Avatar name={t.from} size={24} /> {t.from}
+                                  <span className="settle-arrow">→</span>
+                                  <Avatar name={t.to} size={24} /> {t.to}
+                                </span>
+                                <span className="settle-amount">{fmt(t.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </React.Fragment>
                   )}
