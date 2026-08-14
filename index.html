@@ -1141,21 +1141,37 @@
           // eslint-disable-next-line
         }, []);
 
-        // Lưu cục bộ (luôn luôn) + đẩy lên Firestore khi thay đổi là do người dùng máy này gây ra
+        // Lưu cục bộ (luôn luôn, để mở app offline vẫn thấy dữ liệu gần nhất)
         useEffect(() => {
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(meals)); } catch {}
           try { localStorage.setItem(STORAGE_KEY_ADJ, JSON.stringify(adjustments)); } catch {}
-          if (isRemoteUpdate.current) { isRemoteUpdate.current = false; return; }
+        }, [meals, adjustments]);
+
+        // Áp một thao tác (thêm/sửa/xoá...) lên đúng dữ liệu MỚI NHẤT trên Firestore,
+        // thay vì ghi đè cả mảng dựa trên state cục bộ (có thể đã cũ nếu mở nhiều thiết bị).
+        // Nhờ vậy nếu bạn vừa thêm 1 khoản ở điện thoại, rồi thao tác tiếp ở laptop (dù
+        // laptop chưa kịp nhận bản mới), thao tác ở laptop sẽ được cộng thêm vào bản mới
+        // nhất trên máy chủ chứ không xoá mất khoản vừa thêm ở điện thoại.
+        const syncPatch = (mealsPatchFn, adjustmentsPatchFn) => {
           setSyncStatus("saving");
-          db.collection("rooms").doc(ROOM_ID)
-            .set({ meals, adjustments, updatedAt: Date.now() }, { merge: true })
+          const ref = db.collection("rooms").doc(ROOM_ID);
+          db.runTransaction(async (tx) => {
+            const snap = await tx.get(ref);
+            const data = snap.exists ? snap.data() || {} : {};
+            const serverMeals = Array.isArray(data.meals) ? data.meals : [];
+            const serverAdjustments = Array.isArray(data.adjustments) ? data.adjustments : [];
+            const newMeals = mealsPatchFn ? mealsPatchFn(serverMeals) : serverMeals;
+            const newAdjustments = adjustmentsPatchFn ? adjustmentsPatchFn(serverAdjustments) : serverAdjustments;
+            tx.set(ref, { meals: newMeals, adjustments: newAdjustments, updatedAt: Date.now() }, { merge: true });
+          })
             .then(() => setSyncStatus("synced"))
             .catch((err) => { console.error(err); setSyncStatus("error"); });
-        }, [meals, adjustments]);
+        };
 
         const addMeal = (meal) => {
           const next = [meal, ...meals];
           setMeals(next);
+          syncPatch((serverMeals) => [meal, ...serverMeals]);
         };
         const deleteMeal = (id) => {
           const meal = meals.find((x) => x.id === id);
@@ -1164,11 +1180,13 @@
           const next = meals.filter((x) => x.id !== id);
           setMeals(next);
           if (editingMealId === id) setEditingMealId(null);
+          syncPatch((serverMeals) => serverMeals.filter((x) => x.id !== id));
         };
         const updateMeal = (updatedMeal) => {
           const next = meals.map((m) => (m.id === updatedMeal.id ? updatedMeal : m));
           setMeals(next);
           setEditingMealId(null);
+          syncPatch((serverMeals) => serverMeals.map((m) => (m.id === updatedMeal.id ? updatedMeal : m)));
         };
         const startEditMeal = (meal) => {
           setEditingMealId(meal.id);
@@ -1182,16 +1200,19 @@
           // Nếu đang lọc theo 1 tháng cụ thể (khác "Tất cả"), gán ngày điều chỉnh vào
           // giữa tháng đó để nó không "biến mất" khỏi view đang xem sau khi lưu.
           const date = monthFilter !== "all" ? `${monthFilter}-15` : today;
-          const next = [{ id: uid(), name, amount, note, date }, ...adjustments];
+          const newAdj = { id: uid(), name, amount, note, date };
+          const next = [newAdj, ...adjustments];
           setAdjustments(next);
+          syncPatch(null, (serverAdjustments) => [newAdj, ...serverAdjustments]);
         };
         const deleteAdjustment = (id) => {
           if (!window.confirm("Xoá khoản điều chỉnh này?")) return;
           const next = adjustments.filter((x) => x.id !== id);
           setAdjustments(next);
+          syncPatch(null, (serverAdjustments) => serverAdjustments.filter((x) => x.id !== id));
         };
-        const togglePaid = (mealId, personName) => {
-          const next = meals.map((meal) => {
+        const togglePaidInMeals = (mealsArr, mealId, personName) =>
+          mealsArr.map((meal) => {
             if (meal.id !== mealId) return meal;
             const shares = computeShares(meal);
             return {
@@ -1204,10 +1225,12 @@
               }),
             };
           });
-          setMeals(next);
+        const togglePaid = (mealId, personName) => {
+          setMeals((prev) => togglePaidInMeals(prev, mealId, personName));
+          syncPatch((serverMeals) => togglePaidInMeals(serverMeals, mealId, personName));
         };
-        const setPersonAmount = (mealId, personName, amount) => {
-          const next = meals.map((meal) => {
+        const setPersonAmountInMeals = (mealsArr, mealId, personName, amount) =>
+          mealsArr.map((meal) => {
             if (meal.id !== mealId) return meal;
             const shares = computeShares(meal);
             const share = shares[personName] || 0;
@@ -1217,11 +1240,13 @@
               people: meal.people.map((p) => (p.name === personName ? { ...p, paidAmount: clamped } : p)),
             };
           });
-          setMeals(next);
+        const setPersonAmount = (mealId, personName, amount) => {
+          setMeals((prev) => setPersonAmountInMeals(prev, mealId, personName, amount));
+          syncPatch((serverMeals) => setPersonAmountInMeals(serverMeals, mealId, personName, amount));
         };
         // amount === null -> bỏ tuỳ chỉnh, chia đều lại phần còn lại cho người này.
-        const setShareOverride = (mealId, personName, amount) => {
-          const next = meals.map((meal) => {
+        const setShareOverrideInMeals = (mealsArr, mealId, personName, amount) =>
+          mealsArr.map((meal) => {
             if (meal.id !== mealId) return meal;
             const people = meal.people.map((p) =>
               p.name === personName ? { ...p, shareOverride: amount == null ? null : Math.max(0, amount) } : p
@@ -1234,7 +1259,9 @@
             }));
             return { ...meal, people: clampedPeople };
           });
-          setMeals(next);
+        const setShareOverride = (mealId, personName, amount) => {
+          setMeals((prev) => setShareOverrideInMeals(prev, mealId, personName, amount));
+          syncPatch((serverMeals) => setShareOverrideInMeals(serverMeals, mealId, personName, amount));
         };
 
         const knownPeople = useMemo(() => {
